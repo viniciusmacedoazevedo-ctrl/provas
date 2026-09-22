@@ -103,7 +103,7 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 
 1. **Autenticação e Usuários** — login, sessão, papéis (implementado nesta etapa)
 2. **Disciplinas** — CRUD (implementado como módulo de referência)
-3. **Assuntos** — CRUD, vinculado a disciplina (Fase 2)
+3. **Assuntos** — CRUD, vinculado a disciplina (implementado)
 4. **Banco de Questões** — CRUD de questões, filtros por disciplina/assunto/dificuldade (Fase 3)
 5. **Provas** — montagem (seleção/aleatorização de questões), configuração (Fase 4)
 6. **Aplicação de Provas** — fluxo do aluno: iniciar tentativa, responder, timer, envio (Fase 5)
@@ -114,8 +114,7 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 - [x] **Fase 0** — Scaffolding: Next.js + TS + Tailwind + Prisma + Docker Compose
 - [x] **Fase 1** — Autenticação e sessão (login, proteção de rotas, papéis no schema)
 - [~] **Fase 1.1** — Gestão de usuários (criar/editar/desativar usuários pela UI, hoje só via seed)
-- [x] **Fase 2 (parcial)** — Disciplinas: CRUD completo
-- [ ] **Fase 2** — Assuntos: CRUD vinculado a disciplinas
+- [x] **Fase 2** — Disciplinas e Assuntos: CRUD completo
 - [ ] **Fase 3** — Banco de Questões (CRUD, tipos de questão, filtros)
 - [ ] **Fase 4** — Criação/montagem de Provas
 - [ ] **Fase 5** — Aplicação de Provas (fluxo do aluno)
