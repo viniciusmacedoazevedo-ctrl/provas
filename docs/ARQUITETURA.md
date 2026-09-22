@@ -104,7 +104,7 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 1. **Autenticação e Usuários** — login, sessão, papéis (implementado nesta etapa)
 2. **Disciplinas** — CRUD (implementado como módulo de referência)
 3. **Assuntos** — CRUD, vinculado a disciplina (implementado)
-4. **Banco de Questões** — CRUD de questões, filtros por disciplina/assunto/dificuldade (Fase 3)
+4. **Banco de Questões** — CRUD de questões (múltipla escolha, V/F, dissertativa), filtros por disciplina/assunto/tipo/dificuldade (implementado)
 5. **Provas** — montagem (seleção/aleatorização de questões), configuração (Fase 4)
 6. **Aplicação de Provas** — fluxo do aluno: iniciar tentativa, responder, timer, envio (Fase 5)
 7. **Correção e Resultados** — correção automática (objetivas) + manual (dissertativas) (Fase 6)
@@ -115,7 +115,7 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 - [x] **Fase 1** — Autenticação e sessão (login, proteção de rotas, papéis no schema)
 - [~] **Fase 1.1** — Gestão de usuários (criar/editar/desativar usuários pela UI, hoje só via seed)
 - [x] **Fase 2** — Disciplinas e Assuntos: CRUD completo
-- [ ] **Fase 3** — Banco de Questões (CRUD, tipos de questão, filtros)
+- [x] **Fase 3** — Banco de Questões (CRUD, tipos de questão, filtros)
 - [ ] **Fase 4** — Criação/montagem de Provas
 - [ ] **Fase 5** — Aplicação de Provas (fluxo do aluno)
 - [ ] **Fase 6** — Correção e Resultados
