@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Faz as classes `dark:` reagirem à classe `.dark` (alternada em
+   src/components/theme-toggle.tsx), em vez do padrão do Tailwind v4 que
+   segue prefers-color-scheme do sistema operacional. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --radius: 0.75rem;
   --background: #f8fafc;

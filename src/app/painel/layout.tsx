@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { AlternadorTema } from "@/components/theme-toggle";
 
 const itensNav = [
   { href: "/painel", label: "Início" },
@@ -42,6 +43,7 @@ export default async function LayoutPainel({
           ))}
         </nav>
         <div className="flex items-center gap-3 text-sm">
+          <AlternadorTema />
           <span className="text-muted-foreground">
             {session.user.name} ·{" "}
             <span className="font-medium text-secondary-foreground">
