@@ -1,0 +1,221 @@
+// Schema do sistema de provas
+// Documentação: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Papel {
+  ADMIN
+  PROFESSOR
+  ALUNO
+}
+
+enum TipoQuestao {
+  MULTIPLA_ESCOLHA
+  VERDADEIRO_FALSO
+  DISSERTATIVA
+}
+
+enum Dificuldade {
+  FACIL
+  MEDIA
+  DIFICIL
+}
+
+enum StatusProva {
+  RASCUNHO
+  PUBLICADA
+  ENCERRADA
+}
+
+enum StatusTentativa {
+  EM_ANDAMENTO
+  ENVIADA
+  CORRIGIDA
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  papel        Papel    @default(ALUNO)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  disciplinasCriadas Disciplina[]      @relation("DisciplinaCriadaPor")
+  questoesCriadas    Questao[]         @relation("QuestaoCriadaPor")
+  provasCriadas      Prova[]           @relation("ProvaCriadaPor")
+  tentativas         Tentativa[]       @relation("TentativaDoAluno")
+  provasAtribuidas   ProvaAluno[]      @relation("ProvaAlunoAtribuido")
+
+  @@map("usuarios")
+}
+
+model Disciplina {
+  id          String   @id @default(cuid())
+  nome        String
+  descricao   String?
+  criadoPorId String
+  criadoEm    DateTime @default(now())
+
+  criadoPor Usuario   @relation("DisciplinaCriadaPor", fields: [criadoPorId], references: [id])
+  assuntos  Assunto[]
+  questoes  Questao[]
+  provas    Prova[]
+
+  @@map("disciplinas")
+}
+
+model Assunto {
+  id           String  @id @default(cuid())
+  nome         String
+  descricao    String?
+  disciplinaId String
+
+  disciplina Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Cascade)
+  questoes   Questao[]
+
+  @@map("assuntos")
+}
+
+model Questao {
+  id          String      @id @default(cuid())
+  enunciado   String
+  tipo        TipoQuestao
+  dificuldade Dificuldade @default(MEDIA)
+
+  disciplinaId String
+  assuntoId    String?
+  criadoPorId  String
+  criadoEm     DateTime @default(now())
+
+  // usada apenas quando tipo = DISSERTATIVA (gabarito de referência p/ correção manual)
+  respostaReferencia String?
+
+  // dados de questões importadas de materiais (PDF, vestibulares)
+  fonte          String?  // banca, ex: "Enem/2015", "Fuvest"
+  origem         String?  // material de onde veio, ex: "Resolva Enem 1"
+  numeroOriginal Int?     // número da questão no material
+  paginaOrigem   Int?     // página do PDF, para conferir o original
+  competencia    String?  // competência do ENEM, ex: "C-06"
+  habilidade     String?  // habilidade do ENEM, ex: "H-25"
+  precisaRevisao Boolean  @default(false)
+
+  disciplina    Disciplina      @relation(fields: [disciplinaId], references: [id])
+  assunto       Assunto?        @relation(fields: [assuntoId], references: [id])
+  criadoPor     Usuario         @relation("QuestaoCriadaPor", fields: [criadoPorId], references: [id])
+  opcoes        OpcaoQuestao[]
+  provaQuestoes ProvaQuestao[]
+  respostas     Resposta[]
+
+  @@unique([origem, numeroOriginal])
+  @@map("questoes")
+}
+
+// usada quando tipo = MULTIPLA_ESCOLHA ou VERDADEIRO_FALSO
+model OpcaoQuestao {
+  id        String  @id @default(cuid())
+  questaoId String
+  texto     String
+  correta   Boolean @default(false)
+  ordem     Int     @default(0)
+
+  questao   Questao    @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  respostas Resposta[]
+
+  @@map("opcoes_questao")
+}
+
+model Prova {
+  id          String      @id @default(cuid())
+  titulo      String
+  descricao   String?
+  status      StatusProva @default(RASCUNHO)
+
+  disciplinaId String
+  criadoPorId  String
+  criadoEm     DateTime @default(now())
+
+  duracaoMinutos       Int?
+  tentativasPermitidas Int     @default(1)
+  embaralharQuestoes   Boolean @default(false)
+  dataInicio           DateTime?
+  dataFim              DateTime?
+
+  disciplina       Disciplina     @relation(fields: [disciplinaId], references: [id])
+  criadoPor        Usuario        @relation("ProvaCriadaPor", fields: [criadoPorId], references: [id])
+  provaQuestoes    ProvaQuestao[]
+  tentativas       Tentativa[]
+  alunosAtribuidos ProvaAluno[]
+
+  @@map("provas")
+}
+
+// atribuição explícita de uma prova a um aluno. Se uma prova não tem nenhuma linha aqui,
+// ela fica aberta a qualquer aluno (comportamento padrão, compatível com provas antigas);
+// assim que a primeira atribuição é criada, a prova passa a ser visível só para os atribuídos.
+model ProvaAluno {
+  provaId String
+  alunoId String
+
+  prova Prova   @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  aluno Usuario @relation("ProvaAlunoAtribuido", fields: [alunoId], references: [id], onDelete: Cascade)
+
+  @@id([provaId, alunoId])
+  @@map("prova_alunos")
+}
+
+// tabela de junção entre Prova e Questao, com ordem e valor (peso) de cada questão na prova
+model ProvaQuestao {
+  provaId   String
+  questaoId String
+  ordem     Int
+  valor     Float @default(1)
+
+  prova   Prova   @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  questao Questao @relation(fields: [questaoId], references: [id])
+
+  @@id([provaId, questaoId])
+  @@map("prova_questoes")
+}
+
+// uma tentativa = uma aplicação da prova para um aluno
+model Tentativa {
+  id           String           @id @default(cuid())
+  provaId      String
+  alunoId      String
+  status       StatusTentativa  @default(EM_ANDAMENTO)
+  iniciadoEm   DateTime         @default(now())
+  finalizadoEm DateTime?
+  nota         Float?
+
+  prova     Prova      @relation(fields: [provaId], references: [id])
+  aluno     Usuario    @relation("TentativaDoAluno", fields: [alunoId], references: [id])
+  respostas Resposta[]
+
+  @@map("tentativas")
+}
+
+model Resposta {
+  id                 String   @id @default(cuid())
+  tentativaId        String
+  questaoId          String
+  opcaoEscolhidaId   String?
+  textoResposta      String?
+  correta            Boolean?
+  pontuacaoObtida    Float?
+
+  tentativa      Tentativa     @relation(fields: [tentativaId], references: [id], onDelete: Cascade)
+  questao        Questao       @relation(fields: [questaoId], references: [id])
+  opcaoEscolhida OpcaoQuestao? @relation(fields: [opcaoEscolhidaId], references: [id])
+
+  @@unique([tentativaId, questaoId])
+  @@map("respostas")
+}
