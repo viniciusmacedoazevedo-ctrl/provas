@@ -34,10 +34,10 @@ export default async function LayoutPainel({
         <nav className="flex flex-1 flex-wrap gap-4 text-sm">
           {itensNav
             .slice(1)
-            .filter(
-              (item) =>
-                item.href !== "/painel/usuarios" ||
-                session.user.papel === "ADMIN",
+            .filter((item) =>
+              session.user.papel === "ALUNO"
+                ? item.href === "/painel/provas"
+                : item.href !== "/painel/usuarios" || session.user.papel === "ADMIN",
             )
             .map((item) => (
               <Link

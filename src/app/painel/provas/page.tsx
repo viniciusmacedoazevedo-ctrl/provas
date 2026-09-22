@@ -12,6 +12,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { FormularioNovaProva } from "./formulario-nova-prova";
 import { BotaoExcluirProva } from "./botao-excluir-prova";
 import { iniciarTentativa } from "../tentativas/actions";
+import { provasDisponiveisParaAluno } from "@/lib/provas";
+import { StatusTentativaBadge } from "@/components/status-tentativa-badge";
 
 export default async function PaginaProvas() {
   const session = await auth();
@@ -94,33 +96,7 @@ export default async function PaginaProvas() {
 }
 
 async function ListaProvasAluno({ alunoId }: { alunoId: string }) {
-  const agora = new Date();
-
-  const provasPublicadas = await prisma.prova.findMany({
-    where: {
-      status: "PUBLICADA",
-      OR: [{ dataInicio: null }, { dataInicio: { lte: agora } }],
-    },
-    orderBy: { criadoEm: "desc" },
-    include: { disciplina: { select: { nome: true } } },
-  });
-
-  const provasDentroDoPrazo = provasPublicadas.filter(
-    (p) => !p.dataFim || p.dataFim >= agora,
-  );
-
-  const atribuicoes = await prisma.provaAluno.findMany({
-    where: { provaId: { in: provasDentroDoPrazo.map((p) => p.id) } },
-    select: { provaId: true, alunoId: true },
-  });
-  const provasComRestricao = new Set(atribuicoes.map((a) => a.provaId));
-  const provasLiberadasParaEsteAluno = new Set(
-    atribuicoes.filter((a) => a.alunoId === alunoId).map((a) => a.provaId),
-  );
-
-  const provasDisponiveis = provasDentroDoPrazo.filter(
-    (p) => !provasComRestricao.has(p.id) || provasLiberadasParaEsteAluno.has(p.id),
-  );
+  const provasDisponiveis = await provasDisponiveisParaAluno(alunoId);
 
   const tentativas = await prisma.tentativa.findMany({
     where: {
@@ -152,13 +128,18 @@ async function ListaProvasAluno({ alunoId }: { alunoId: string }) {
               const esgotou =
                 tentativasDaProva.length >= prova.tentativasPermitidas;
               const ultima = tentativasDaProva[0];
+              const statusAtual = emAndamento
+                ? "EM_ANDAMENTO"
+                : ultima
+                  ? ultima.status
+                  : "NAO_INICIADA";
 
               return (
                 <li
                   key={prova.id}
                   className="flex items-center justify-between gap-4 py-3"
                 >
-                  <div>
+                  <div className="flex flex-col gap-1">
                     <p className="font-medium">{prova.titulo}</p>
                     <p className="text-xs text-muted-foreground">
                       {prova.disciplina.nome}
@@ -167,6 +148,7 @@ async function ListaProvasAluno({ alunoId }: { alunoId: string }) {
                       {tentativasDaProva.length}/{prova.tentativasPermitidas}{" "}
                       tentativa(s) usada(s)
                     </p>
+                    <StatusTentativaBadge status={statusAtual} />
                   </div>
                   {emAndamento ? (
                     <Link
