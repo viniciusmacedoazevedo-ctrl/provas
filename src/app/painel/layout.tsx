@@ -32,15 +32,22 @@ export default async function LayoutPainel({
           <Logo tamanhoIcone={18} />
         </Link>
         <nav className="flex flex-1 flex-wrap gap-4 text-sm">
-          {itensNav.slice(1).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {itensNav
+            .slice(1)
+            .filter(
+              (item) =>
+                item.href !== "/painel/usuarios" ||
+                session.user.papel === "ADMIN",
+            )
+            .map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
         </nav>
         <div className="flex items-center gap-3 text-sm">
           <AlternadorTema />
