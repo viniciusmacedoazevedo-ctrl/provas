@@ -98,6 +98,8 @@ ProvaQuestao   (provaId, questaoId, ordem, valor)             # join table
 Tentativa      (id, provaId, alunoId, status, iniciadoEm, finalizadoEm, nota)
 Resposta       (tentativaId, questaoId, opcaoEscolhidaId?, textoResposta?,
                 correta?, pontuacaoObtida?)
+ProvaAluno     (provaId, alunoId)     # atribuição opcional; prova sem nenhuma linha
+                                       # fica aberta a todos os alunos
 ```
 
 Papéis e permissões começam simples (enum `Papel` no `Usuario`). Se no futuro for

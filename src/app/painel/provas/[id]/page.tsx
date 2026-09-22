@@ -13,6 +13,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { BotaoAdicionarQuestao } from "./botao-adicionar-questao";
 import { BotaoRemoverQuestao } from "./botao-remover-questao";
 import { BotaoPublicar } from "./botao-publicar";
+import { BotaoAtribuirAluno } from "./botao-atribuir-aluno";
+import { BotaoRemoverAluno } from "./botao-remover-aluno";
 
 const rotuloStatusTentativa: Record<string, string> = {
   EM_ANDAMENTO: "Em andamento",
@@ -41,10 +43,25 @@ export default async function PaginaMontagemProva({
         orderBy: { ordem: "asc" },
         include: { questao: true },
       },
+      alunosAtribuidos: {
+        include: { aluno: { select: { id: true, nome: true, email: true } } },
+      },
     },
   });
 
   if (!prova) notFound();
+
+  const todosAlunos = await prisma.usuario.findMany({
+    where: { papel: "ALUNO" },
+    orderBy: { nome: "asc" },
+    select: { id: true, nome: true, email: true },
+  });
+
+  const restrita = prova.alunosAtribuidos.length > 0;
+  const idsAtribuidos = new Set(prova.alunosAtribuidos.map((pa) => pa.alunoId));
+  const alunosDisponiveisParaAtribuir = todosAlunos.filter(
+    (a) => !idsAtribuidos.has(a.id),
+  );
 
   const idsNaProva = prova.provaQuestoes.map((pq) => pq.questaoId);
 
@@ -69,6 +86,24 @@ export default async function PaginaMontagemProva({
     notasFinalizadas.length > 0
       ? notasFinalizadas.reduce((soma, n) => soma + n, 0) / notasFinalizadas.length
       : null;
+
+  const tentativasPorAluno = new Map<string, typeof tentativas>();
+  for (const tentativa of tentativas) {
+    const lista = tentativasPorAluno.get(tentativa.alunoId) ?? [];
+    lista.push(tentativa);
+    tentativasPorAluno.set(tentativa.alunoId, lista);
+  }
+
+  const alunosDaProva = restrita
+    ? prova.alunosAtribuidos.map((pa) => pa.aluno)
+    : todosAlunos;
+
+  const roster = alunosDaProva
+    .map((aluno) => ({
+      aluno,
+      tentativas: tentativasPorAluno.get(aluno.id) ?? [],
+    }))
+    .sort((a, b) => a.aluno.nome.localeCompare(b.aluno.nome));
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,6 +131,58 @@ export default async function PaginaMontagemProva({
             publicada={prova.status === "PUBLICADA"}
             podePublicar={prova.provaQuestoes.length > 0}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Alunos com acesso ({restrita ? prova.alunosAtribuidos.length : "todos"})
+          </CardTitle>
+          <CardDescription>
+            {restrita
+              ? "Apenas os alunos abaixo podem ver e responder esta prova."
+              : "Nenhum aluno específico foi atribuído: a prova fica aberta para todos os alunos. Adicione um aluno abaixo para restringir o acesso."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {restrita && (
+            <ul className="flex flex-col divide-y">
+              {prova.alunosAtribuidos.map((pa) => (
+                <li
+                  key={pa.alunoId}
+                  className="flex items-center justify-between gap-4 py-3"
+                >
+                  <div>
+                    <p className="font-medium">{pa.aluno.nome}</p>
+                    <p className="text-xs text-muted-foreground">{pa.aluno.email}</p>
+                  </div>
+                  <BotaoRemoverAluno provaId={prova.id} alunoId={pa.alunoId} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {alunosDisponiveisParaAtribuir.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-sm text-muted-foreground">
+                {restrita ? "Adicionar outro aluno" : "Restringir a alunos específicos"}
+              </summary>
+              <ul className="mt-2 flex flex-col divide-y">
+                {alunosDisponiveisParaAtribuir.map((aluno) => (
+                  <li
+                    key={aluno.id}
+                    className="flex items-center justify-between gap-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium">{aluno.nome}</p>
+                      <p className="text-xs text-muted-foreground">{aluno.email}</p>
+                    </div>
+                    <BotaoAtribuirAluno provaId={prova.id} alunoId={aluno.id} />
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </CardContent>
       </Card>
 
@@ -165,7 +252,7 @@ export default async function PaginaMontagemProva({
 
       <Card>
         <CardHeader>
-          <CardTitle>Resultados ({tentativas.length} tentativa(s))</CardTitle>
+          <CardTitle>Resultados ({roster.length} aluno(s))</CardTitle>
           <CardDescription>
             {mediaNotas !== null
               ? `Média das tentativas finalizadas: ${mediaNotas.toFixed(2)}`
@@ -181,37 +268,46 @@ export default async function PaginaMontagemProva({
               Exportar CSV
             </a>
           )}
-          {tentativas.length === 0 ? (
+          {roster.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum aluno fez esta prova ainda.
+              Nenhum aluno cadastrado ainda.
             </p>
           ) : (
             <ul className="flex flex-col divide-y">
-              {tentativas.map((tentativa) => (
-                <li
-                  key={tentativa.id}
-                  className="flex items-center justify-between gap-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium">{tentativa.aluno.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {rotuloStatusTentativa[tentativa.status]}
-                      {tentativa.status !== "EM_ANDAMENTO" &&
-                        ` · nota ${tentativa.nota ?? 0}`}
-                    </p>
-                  </div>
-                  {tentativa.status === "EM_ANDAMENTO" ? (
-                    <span className="text-sm text-muted-foreground">—</span>
-                  ) : (
-                    <Link
-                      href={`/painel/tentativas/${tentativa.id}/corrigir`}
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      {tentativa.status === "ENVIADA" ? "Corrigir" : "Ver correção"}
-                    </Link>
-                  )}
-                </li>
-              ))}
+              {roster.map(({ aluno, tentativas: tentativasDoAluno }) => {
+                const ultima = tentativasDoAluno[0];
+                return (
+                  <li
+                    key={aluno.id}
+                    className="flex items-center justify-between gap-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium">{aluno.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ultima
+                          ? rotuloStatusTentativa[ultima.status]
+                          : "Não iniciou"}
+                        {" · "}
+                        {tentativasDoAluno.length}/{prova.tentativasPermitidas}{" "}
+                        tentativa(s)
+                        {ultima &&
+                          ultima.status !== "EM_ANDAMENTO" &&
+                          ` · nota ${ultima.nota ?? 0}`}
+                      </p>
+                    </div>
+                    {ultima && ultima.status !== "EM_ANDAMENTO" ? (
+                      <Link
+                        href={`/painel/tentativas/${ultima.id}/corrigir`}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        {ultima.status === "ENVIADA" ? "Corrigir" : "Ver correção"}
+                      </Link>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

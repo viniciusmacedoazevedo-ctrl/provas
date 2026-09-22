@@ -26,6 +26,28 @@ export async function removerQuestaoDaProva(provaId: string, questaoId: string) 
   revalidatePath(`/painel/provas/${provaId}`);
 }
 
+export async function atribuirAlunoAProva(provaId: string, alunoId: string) {
+  await exigirPapel("ADMIN", "PROFESSOR");
+
+  await prisma.provaAluno.upsert({
+    where: { provaId_alunoId: { provaId, alunoId } },
+    update: {},
+    create: { provaId, alunoId },
+  });
+
+  revalidatePath(`/painel/provas/${provaId}`);
+}
+
+export async function removerAlunoDaProva(provaId: string, alunoId: string) {
+  await exigirPapel("ADMIN", "PROFESSOR");
+
+  await prisma.provaAluno.delete({
+    where: { provaId_alunoId: { provaId, alunoId } },
+  });
+
+  revalidatePath(`/painel/provas/${provaId}`);
+}
+
 export async function alternarPublicacaoProva(provaId: string) {
   await exigirPapel("ADMIN", "PROFESSOR");
 

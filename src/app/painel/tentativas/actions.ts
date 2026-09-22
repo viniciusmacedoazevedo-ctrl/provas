@@ -22,6 +22,16 @@ export async function iniciarTentativa(provaId: string) {
     throw new Error("O prazo desta prova já encerrou.");
   }
 
+  const provaTemRestricao = (await prisma.provaAluno.count({ where: { provaId } })) > 0;
+  if (provaTemRestricao) {
+    const alunoTemAcesso = await prisma.provaAluno.findUnique({
+      where: { provaId_alunoId: { provaId, alunoId: usuario.id } },
+    });
+    if (!alunoTemAcesso) {
+      throw new Error("Você não tem acesso a esta prova.");
+    }
+  }
+
   const tentativaEmAndamento = await prisma.tentativa.findFirst({
     where: { provaId, alunoId: usuario.id, status: "EM_ANDAMENTO" },
   });

@@ -105,8 +105,21 @@ async function ListaProvasAluno({ alunoId }: { alunoId: string }) {
     include: { disciplina: { select: { nome: true } } },
   });
 
-  const provasDisponiveis = provasPublicadas.filter(
+  const provasDentroDoPrazo = provasPublicadas.filter(
     (p) => !p.dataFim || p.dataFim >= agora,
+  );
+
+  const atribuicoes = await prisma.provaAluno.findMany({
+    where: { provaId: { in: provasDentroDoPrazo.map((p) => p.id) } },
+    select: { provaId: true, alunoId: true },
+  });
+  const provasComRestricao = new Set(atribuicoes.map((a) => a.provaId));
+  const provasLiberadasParaEsteAluno = new Set(
+    atribuicoes.filter((a) => a.alunoId === alunoId).map((a) => a.provaId),
+  );
+
+  const provasDisponiveis = provasDentroDoPrazo.filter(
+    (p) => !provasComRestricao.has(p.id) || provasLiberadasParaEsteAluno.has(p.id),
   );
 
   const tentativas = await prisma.tentativa.findMany({

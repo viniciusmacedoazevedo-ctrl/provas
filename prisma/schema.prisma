@@ -53,6 +53,7 @@ model Usuario {
   questoesCriadas    Questao[]         @relation("QuestaoCriadaPor")
   provasCriadas      Prova[]           @relation("ProvaCriadaPor")
   tentativas         Tentativa[]       @relation("TentativaDoAluno")
+  provasAtribuidas   ProvaAluno[]      @relation("ProvaAlunoAtribuido")
 
   @@map("usuarios")
 }
@@ -148,12 +149,27 @@ model Prova {
   dataInicio           DateTime?
   dataFim              DateTime?
 
-  disciplina    Disciplina     @relation(fields: [disciplinaId], references: [id])
-  criadoPor     Usuario        @relation("ProvaCriadaPor", fields: [criadoPorId], references: [id])
-  provaQuestoes ProvaQuestao[]
-  tentativas    Tentativa[]
+  disciplina       Disciplina     @relation(fields: [disciplinaId], references: [id])
+  criadoPor        Usuario        @relation("ProvaCriadaPor", fields: [criadoPorId], references: [id])
+  provaQuestoes    ProvaQuestao[]
+  tentativas       Tentativa[]
+  alunosAtribuidos ProvaAluno[]
 
   @@map("provas")
+}
+
+// atribuição explícita de uma prova a um aluno. Se uma prova não tem nenhuma linha aqui,
+// ela fica aberta a qualquer aluno (comportamento padrão, compatível com provas antigas);
+// assim que a primeira atribuição é criada, a prova passa a ser visível só para os atribuídos.
+model ProvaAluno {
+  provaId String
+  alunoId String
+
+  prova Prova   @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  aluno Usuario @relation("ProvaAlunoAtribuido", fields: [alunoId], references: [id], onDelete: Cascade)
+
+  @@id([provaId, alunoId])
+  @@map("prova_alunos")
 }
 
 // tabela de junção entre Prova e Questao, com ordem e valor (peso) de cada questão na prova
