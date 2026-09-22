@@ -1,17 +1,23 @@
 import type { NextConfig } from "next";
 
-// Em desenvolvimento dentro de um GitHub Codespace, o navegador acessa a app
-// por um domínio público encaminhado (https://<nome>-<porta>.app.github.dev),
-// diferente do host interno em que o servidor Next.js roda (localhost:3000).
-// Sem isso, o Next rejeita a origem por padrão (proteção contra CSRF) e as
-// Server Actions falham com "Invalid Server Actions request".
-const origensCodespaces = ["*.app.github.dev", "*.github.dev"];
+// Em desenvolvimento dentro de um GitHub Codespace, o proxy de encaminhamento
+// de portas reescreve o header `Origin` das requisições para `localhost:<porta>`
+// (para compatibilidade com dev servers que só aceitam localhost), embora
+// informe o domínio público real via `x-forwarded-host`. O Next.js compara
+// esses dois headers como proteção contra CSRF nas Server Actions, então sem
+// isso a requisição é rejeitada com "Invalid Server Actions request", mesmo o
+// `x-forwarded-host` estando correto.
+const origensPermitidas = [
+  "*.app.github.dev",
+  "*.github.dev",
+  "localhost:3000",
+];
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: origensCodespaces,
+  allowedDevOrigins: origensPermitidas,
   experimental: {
     serverActions: {
-      allowedOrigins: origensCodespaces,
+      allowedOrigins: origensPermitidas,
     },
   },
 };
