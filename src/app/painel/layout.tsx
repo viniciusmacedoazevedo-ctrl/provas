@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 
 const itensNav = [
   { href: "/painel", label: "Início" },
@@ -24,14 +25,17 @@ export default async function LayoutPainel({
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b px-6 py-4">
-        <nav className="flex flex-wrap gap-4 text-sm">
-          {itensNav.map((item) => (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-card/80 px-6 py-3 backdrop-blur">
+        <Link href="/painel">
+          <Logo tamanhoIcone={18} />
+        </Link>
+        <nav className="flex flex-1 flex-wrap gap-4 text-sm">
+          {itensNav.slice(1).map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </Link>
@@ -39,7 +43,10 @@ export default async function LayoutPainel({
         </nav>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-muted-foreground">
-            {session.user.name} · {session.user.papel}
+            {session.user.name} ·{" "}
+            <span className="font-medium text-secondary-foreground">
+              {session.user.papel}
+            </span>
           </span>
           <form
             action={async () => {

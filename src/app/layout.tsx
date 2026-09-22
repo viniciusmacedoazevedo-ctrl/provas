@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Provas",
+  title: "Vinicius Provas",
   description: "Sistema de criação, gerenciamento e aplicação de provas",
 };
 
