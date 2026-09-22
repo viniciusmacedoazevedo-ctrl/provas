@@ -98,6 +98,15 @@ model Questao {
   // usada apenas quando tipo = DISSERTATIVA (gabarito de referência p/ correção manual)
   respostaReferencia String?
 
+  // dados de questões importadas de materiais (PDF, vestibulares)
+  fonte          String?  // banca, ex: "Enem/2015", "Fuvest"
+  origem         String?  // material de onde veio, ex: "Resolva Enem 1"
+  numeroOriginal Int?     // número da questão no material
+  paginaOrigem   Int?     // página do PDF, para conferir o original
+  competencia    String?  // competência do ENEM, ex: "C-06"
+  habilidade     String?  // habilidade do ENEM, ex: "H-25"
+  precisaRevisao Boolean  @default(false)
+
   disciplina    Disciplina      @relation(fields: [disciplinaId], references: [id])
   assunto       Assunto?        @relation(fields: [assuntoId], references: [id])
   criadoPor     Usuario         @relation("QuestaoCriadaPor", fields: [criadoPorId], references: [id])
@@ -105,6 +114,7 @@ model Questao {
   provaQuestoes ProvaQuestao[]
   respostas     Resposta[]
 
+  @@unique([origem, numeroOriginal])
   @@map("questoes")
 }
 
