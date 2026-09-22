@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -45,13 +46,26 @@ export default async function PaginaTentativa({
   });
 
   if (!tentativa) notFound();
-  if (tentativa.alunoId !== session?.user.id && session?.user.papel !== "ADMIN") {
+  const podeVerQualquerTentativa =
+    session?.user.papel === "ADMIN" || session?.user.papel === "PROFESSOR";
+  if (tentativa.alunoId !== session?.user.id && !podeVerQualquerTentativa) {
     notFound();
   }
 
   const questoesOrdenadas = tentativa.prova.embaralharQuestoes
     ? embaralharDeterministico(tentativa.prova.provaQuestoes, tentativa.id)
     : tentativa.prova.provaQuestoes;
+
+  if (tentativa.status === "EM_ANDAMENTO" && tentativa.alunoId !== session?.user.id) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{tentativa.prova.titulo}</CardTitle>
+          <CardDescription>O aluno ainda não enviou esta tentativa.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   if (tentativa.status === "EM_ANDAMENTO") {
     const expiraEm = tentativa.prova.duracaoMinutos
@@ -94,6 +108,13 @@ export default async function PaginaTentativa({
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        href="/painel/provas"
+        className="text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Voltar para Provas
+      </Link>
+
       <Card>
         <CardHeader>
           <CardTitle>{tentativa.prova.titulo}</CardTitle>

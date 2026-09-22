@@ -99,11 +99,19 @@ export async function enviarTentativa(tentativaId: string, formData: FormData) {
     };
   });
 
+  const temDissertativa = tentativa.prova.provaQuestoes.some(
+    (pq) => pq.questao.tipo === "DISSERTATIVA",
+  );
+
   await prisma.$transaction([
     prisma.resposta.createMany({ data: respostas }),
     prisma.tentativa.update({
       where: { id: tentativaId },
-      data: { status: "ENVIADA", finalizadoEm: new Date(), nota: notaTotal },
+      data: {
+        status: temDissertativa ? "ENVIADA" : "CORRIGIDA",
+        finalizadoEm: new Date(),
+        nota: notaTotal,
+      },
     }),
   ]);
 

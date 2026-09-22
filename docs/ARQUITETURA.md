@@ -45,6 +45,8 @@ de múltiplos serviços — um monólito modular é mais fácil de manter por um
 ```
 provas/
 ├── docker-compose.yml          # Postgres local
+├── playwright.config.ts        # config dos testes e2e
+├── e2e/                        # testes e2e (Playwright)
 ├── prisma7.config.ts           # config do Prisma CLI (schema, migrations, seed)
 ├── prisma/
 │   ├── schema.prisma            # modelo de dados
@@ -58,9 +60,11 @@ provas/
 │   │   │   ├── disciplinas/              # CRUD completo (referência)
 │   │   │   ├── assuntos/                 # CRUD vinculado a disciplina
 │   │   │   ├── questoes/                 # banco de questões (M.E./V-F/dissertativa)
-│   │   │   ├── provas/                   # criação, montagem e publicação
-│   │   │   │   └── [id]/                 # montagem: adicionar/remover questões
+│   │   │   ├── provas/                   # criação, montagem, publicação e relatório
+│   │   │   │   └── [id]/                 # montagem, resultados por aluno
+│   │   │   │       └── exportar/         # exporta resultados em CSV
 │   │   │   ├── tentativas/[id]/          # aplicação da prova pelo aluno + resultado
+│   │   │   │   └── corrigir/             # correção manual de questões dissertativas
 │   │   │   └── usuarios/                 # placeholder (Fase 1, gestão de usuários)
 │   │   └── api/auth/[...nextauth]/       # handler do Auth.js
 │   ├── auth.ts                  # configuração principal do Auth.js (Credentials + Prisma)
@@ -109,7 +113,7 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 4. **Banco de Questões** — CRUD de questões (múltipla escolha, V/F, dissertativa), filtros por disciplina/assunto/tipo/dificuldade (implementado)
 5. **Provas** — montagem (seleção de questões, publicação, configuração) (implementado)
 6. **Aplicação de Provas** — fluxo do aluno: iniciar tentativa, responder, timer, envio (implementado)
-7. **Correção e Resultados** — correção automática (objetivas) + manual (dissertativas) (Fase 6)
+7. **Correção e Resultados** — correção automática (objetivas) + manual (dissertativas) (implementado)
 
 ## 6. Plano de desenvolvimento por etapas
 
@@ -120,8 +124,14 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 - [x] **Fase 3** — Banco de Questões (CRUD, tipos de questão, filtros)
 - [x] **Fase 4** — Criação/montagem de Provas
 - [x] **Fase 5** — Aplicação de Provas (fluxo do aluno)
-- [ ] **Fase 6** — Correção e Resultados (correção manual de dissertativas; hoje a nota de provas com questões dissertativas fica parcial até isso existir)
-- [ ] **Fase 7** — Relatórios, exportação, refino de UI, testes e2e
+- [x] **Fase 6** — Correção e Resultados (correção manual de dissertativas, fechamento de nota)
+- [x] **Fase 7** — Relatório por prova (média, lista de tentativas), exportação CSV, testes e2e (Playwright)
+
+Com isso, o ciclo completo do sistema está implementado: criar questões →
+montar e publicar uma prova → aluno responde → correção (automática e
+manual) → relatório/exportação. O que ainda falta é pontual, não uma fase
+inteira: a **Fase 1.1** (gestão de usuários pela UI — hoje só existe via
+`prisma/seed.ts`) segue em aberto.
 
 ## 7. Decisões e observações do ambiente de scaffolding
 
