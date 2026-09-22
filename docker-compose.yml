@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: provas
+      POSTGRES_PASSWORD: provas
+      POSTGRES_DB: provas
+    ports:
+      - "5432:5432"
+    volumes:
+      - provas_db_data:/var/lib/postgresql/data
+
+volumes:
+  provas_db_data:
