@@ -56,9 +56,11 @@ provas/
 │   │   ├── painel/                       # área autenticada
 │   │   │   ├── layout.tsx                # navegação + verificação de sessão
 │   │   │   ├── disciplinas/              # CRUD completo (referência)
-│   │   │   ├── assuntos/                 # placeholder (Fase 2)
-│   │   │   ├── questoes/                 # placeholder (Fase 3)
-│   │   │   ├── provas/                   # placeholder (Fase 4)
+│   │   │   ├── assuntos/                 # CRUD vinculado a disciplina
+│   │   │   ├── questoes/                 # banco de questões (M.E./V-F/dissertativa)
+│   │   │   ├── provas/                   # criação, montagem e publicação
+│   │   │   │   └── [id]/                 # montagem: adicionar/remover questões
+│   │   │   ├── tentativas/[id]/          # aplicação da prova pelo aluno + resultado
 │   │   │   └── usuarios/                 # placeholder (Fase 1, gestão de usuários)
 │   │   └── api/auth/[...nextauth]/       # handler do Auth.js
 │   ├── auth.ts                  # configuração principal do Auth.js (Credentials + Prisma)
@@ -105,8 +107,8 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 2. **Disciplinas** — CRUD (implementado como módulo de referência)
 3. **Assuntos** — CRUD, vinculado a disciplina (implementado)
 4. **Banco de Questões** — CRUD de questões (múltipla escolha, V/F, dissertativa), filtros por disciplina/assunto/tipo/dificuldade (implementado)
-5. **Provas** — montagem (seleção/aleatorização de questões), configuração (Fase 4)
-6. **Aplicação de Provas** — fluxo do aluno: iniciar tentativa, responder, timer, envio (Fase 5)
+5. **Provas** — montagem (seleção de questões, publicação, configuração) (implementado)
+6. **Aplicação de Provas** — fluxo do aluno: iniciar tentativa, responder, timer, envio (implementado)
 7. **Correção e Resultados** — correção automática (objetivas) + manual (dissertativas) (Fase 6)
 
 ## 6. Plano de desenvolvimento por etapas
@@ -116,9 +118,9 @@ acesso limitado), a evolução natural é introduzir tabelas `Permissao` e
 - [~] **Fase 1.1** — Gestão de usuários (criar/editar/desativar usuários pela UI, hoje só via seed)
 - [x] **Fase 2** — Disciplinas e Assuntos: CRUD completo
 - [x] **Fase 3** — Banco de Questões (CRUD, tipos de questão, filtros)
-- [ ] **Fase 4** — Criação/montagem de Provas
-- [ ] **Fase 5** — Aplicação de Provas (fluxo do aluno)
-- [ ] **Fase 6** — Correção e Resultados
+- [x] **Fase 4** — Criação/montagem de Provas
+- [x] **Fase 5** — Aplicação de Provas (fluxo do aluno)
+- [ ] **Fase 6** — Correção e Resultados (correção manual de dissertativas; hoje a nota de provas com questões dissertativas fica parcial até isso existir)
 - [ ] **Fase 7** — Relatórios, exportação, refino de UI, testes e2e
 
 ## 7. Decisões e observações do ambiente de scaffolding
