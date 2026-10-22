@@ -1,27 +1,45 @@
-# Apuração do 2º turno: acompanhamento ao vivo (TSE)
+# Apuração do 2º turno 2026 ao vivo: Lula (13) × Flávio Bolsonaro (22)
 
-Planilha para acompanhar a apuração do 2º turno de 2026 (25/10). Ela lê o arquivo **EA20, resultado unificado (`…-u.json`)** do TSE e calcula a probabilidade de vitória de cada candidato conforme as seções são totalizadas.
+## Painel ao vivo (recomendado) · pasta `painel-ao-vivo/`
 
-| Arquivo | Para quê |
+É uma página web que roda no seu computador e lê o arquivo de resultado do TSE (EA20, `…-u.json`) a cada 30 segundos.
+
+**Como abrir:**
+
+| Sistema | O que fazer |
 |---|---|
-| `apuracao_2turno.xlsx` | Planilha pronta com as abas Painel, Config, Dados, Histórico, Regras TSE e Como usar. Vem com dados de demonstração fictícios. |
-| `powerquery_tse.m` | Conexão ao vivo no **Excel** por meio de 4 consultas Power Query, com atualização a cada 1 min. |
-| `tse_apps_script.gs` | Conexão ao vivo no **Google Planilhas** por meio de um menu "TSE ao vivo", com gatilho a cada 1 min. |
-| `gerar_planilha.py` | Gera o `.xlsx` de novo (`python3 gerar_planilha.py`). |
+| Windows | Dê dois cliques em `iniciar-windows.bat`. Se o Python estiver instalado, ele é usado. Se não, o painel usa o PowerShell, que já vem no Windows. |
+| Mac / Linux | Rode `./iniciar-mac-linux.sh` (precisa de Python 3). |
 
-## URL padrão
+O navegador abre sozinho em `http://localhost:8765`. **Deixe a janela preta aberta durante a apuração.** Ela é o servidor local que busca os dados no TSE: o navegador sozinho é bloqueado ao ler dados de outro site.
 
-`https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json`
+**O que o painel mostra:**
 
-Os códigos de eleição são 6257 para o 1º turno e 6258 para o 2º turno. O nome do arquivo segue a especificação EA20. O caminho das pastas foi deduzido do ambiente simulado do TSE. **Confira o caminho na aba "Documentos" de resultados.tse.jus.br.** Se for diferente, cole a URL exata em `Config!B8`. Para governador, use a sigla da UF como abrangência e o cargo 3.
+- % de seções totalizadas e situação da apuração.
+- Votos e % dos válidos de cada candidato.
+- Probabilidade de vitória de cada um.
+- Diferença de votos, votos que faltam e quanto deles quem está atrás precisa para virar.
+- Gráficos de probabilidade e de % ao longo da apuração.
+- Exportação do histórico em CSV, que abre no Excel.
 
-## Modelo de probabilidade
+**Para testar antes de domingo:** abra "Configuração e teste da conexão" e escolha "1º turno · Presidente". Esse arquivo já está publicado, então dá para conferir se a conexão funciona. Depois volte para "2º turno". Se o TSE publicar o arquivo em outro caminho, escolha "URL personalizada" e cole o endereço. O endereço aparece na aba "Documentos" de resultados.tse.jus.br.
 
-Para cada totalização, o modelo segue estes passos:
+**Endereço padrão:** `https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json`. O código da eleição é 6258 (2º turno); o 1º turno é 6257.
 
-1. Estima os votos válidos que ainda faltam: eleitorado das seções não totalizadas × comparecimento observado × fração de votos válidos.
-2. Calcula a fatia dos votos restantes de que o candidato 1 precisa para terminar à frente: `0,5 − diferença / (2 × restantes)`.
-3. Calcula a probabilidade com `1 − NORMDIST(fatia necessária; fatia atual + ajuste; σ)`. O valor padrão de σ é 6 p.p. e pode ser alterado em Config. Esse σ representa o fato de que as regiões não são apuradas no mesmo ritmo.
-4. Quando o TSE marca `md = e` (matematicamente definido) ou `tf = s` (totalização final), a planilha fixa 100 % e 0 %.
+## Planilha · `apuracao_2turno.xlsx`
 
-O resultado é uma estimativa estatística e não substitui o resultado oficial.
+A mesma conta da probabilidade, em Excel ou Google Planilhas. Lula e Flávio Bolsonaro já estão cadastrados e não há dados fictícios. A conexão exige um passo único, descrito na aba "Como usar":
+
+- **Excel:** usar `powerquery_tse.m`.
+- **Google Planilhas:** usar `tse_apps_script.gs`, que cria o menu "TSE ao vivo".
+
+`gerar_planilha.py` gera a planilha de novo.
+
+## Como a probabilidade é calculada
+
+1. Os votos válidos que faltam são estimados assim: eleitorado das seções não totalizadas × comparecimento observado × fração de válidos.
+2. Para virar, quem está atrás precisa de `0,5 + diferença / (2 × votos que faltam)` desses votos.
+3. A probabilidade supõe que a fatia de cada candidato nos votos que faltam fica perto da fatia atual, com incerteza de ±6 p.p. Essa margem pode ser ajustada, porque as regiões são apuradas em ritmos diferentes.
+4. Quando o TSE marca a eleição como matematicamente definida (`md = e`) ou com totalização final (`tf = s`), o painel mostra 100% e 0%.
+
+O resultado é uma estimativa. O resultado oficial é sempre o do TSE.

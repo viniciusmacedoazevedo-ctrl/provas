@@ -2,12 +2,11 @@
 
 Uso: python3 gerar_planilha.py [saida.xlsx]
 
-A planilha sai com dados de DEMONSTRAÇÃO (candidatos fictícios) para os gráficos
-aparecerem; ao conectar no TSE (Power Query ou Apps Script) eles são substituídos.
+A planilha sai vazia, com Lula (13) e Flávio Bolsonaro (22) já cadastrados; os votos
+chegam pela conexão com o TSE (Power Query no Excel ou Apps Script no Google Planilhas).
 """
 import math
 import sys
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -53,29 +52,6 @@ CAMPOS_RESUMO = [
 ]
 CAB_HIST = ["Data", "Hora", "Secoes", "SecoesTot", "Eleitorado", "EleitTot", "EleitInst",
             "Comparec", "VotosTotais", "VotosValidos", "VotosCand1", "VotosCand2"]
-
-
-def simular_demo():
-    """Apuração fictícia em que o candidato 1 lidera no início e perde no fim."""
-    ts, te = 472_075, 156_454_011
-    linhas = []
-    hora = datetime(2026, 10, 25, 17, 5)
-    fracs = [0.004, 0.01, 0.02, 0.04, 0.07, 0.10, 0.14, 0.19, 0.25, 0.31, 0.37, 0.43,
-             0.49, 0.55, 0.60, 0.65, 0.70, 0.74, 0.78, 0.82, 0.85, 0.88, 0.905, 0.925,
-             0.94]  # demo para no meio da virada
-    for f in fracs:
-        st = round(ts * f)
-        est = round(te * f)
-        esi = round(est * 0.9985)
-        c = round(esi * 0.79)
-        tv = c
-        vv = round(tv * 0.955)
-        share1 = 0.535 - 0.043 * f ** 1.25  # termina em 49,2%
-        v1 = round(vv * share1)
-        linhas.append([hora.strftime("%d/%m/%Y"), hora.strftime("%H:%M:%S"), ts, st, te, est,
-                       esi, c, tv, vv, v1, vv - v1])
-        hora += timedelta(minutes=6)
-    return linhas
 
 
 def largura(ws, larguras):
@@ -140,8 +116,8 @@ def aba_config(wb):
         (16, "Incerteza dos votos restantes (desvio-padrão)", 0.06, "SIGMA",
          "Quanto a fatia do candidato nas urnas que faltam pode diferir da fatia atual. "
          "Regiões apuram em ritmos diferentes (ex.: 2022, virada no fim). 4%–8% é razoável."),
-        (17, "Ajuste de tendência p/ candidato 1 (p.p.)", 0.0, "AJUSTE",
-         "Ex.: +0,02 se você espera que as urnas restantes favoreçam o cand. 1 em 2 p.p."),
+        (17, "Ajuste de tendência p/ Lula (p.p.)", 0.0, "AJUSTE",
+         "Ex.: +0,02 se você espera que as urnas restantes favoreçam Lula em 2 p.p. (negativo favorece Flávio)"),
         (18, "Comparecimento padrão (antes dos 1ºs dados)", 0.79, "COMPAREC_PAD",
          "Usado só enquanto não há seções totalizadas"),
         (19, "Fração de votos válidos padrão", 0.95, "VALIDOS_PAD",
@@ -159,9 +135,9 @@ def aba_config(wb):
 
     ws["A22"] = "Atenção"
     ws["A22"].font = Font(bold=True, color=COR1)
-    ws["B22"] = ("A planilha vem com DADOS DE DEMONSTRAÇÃO (candidatos fictícios). "
-                 "Antes de conectar, siga a aba 'Como usar'. A probabilidade é uma estimativa "
-                 "estatística — o resultado oficial é sempre o do TSE.")
+    ws["B22"] = ("Lula (13) e Flávio Bolsonaro (22) já estão cadastrados; os votos chegam pela conexão "
+                 "(aba 'Como usar'). Para acompanhar sem configurar nada, use o painel web da pasta "
+                 "painel-ao-vivo. A probabilidade é uma estimativa; o resultado oficial é sempre o do TSE.")
     ws["B22"].alignment = QUEBRA
     ws.row_dimensions[22].height = 48
 
@@ -189,24 +165,19 @@ def aba_dados(wb):
     return ws
 
 
-def preencher_demo(ws_dados, ws_hist, demo):
-    ult = demo[-1]
-    data, hora, ts, st, te, est, esi, c, tv, vv, v1, v2 = ult
-    valores = {"ele": "6258", "t": "2", "tpabr": "br", "cdabr": "br", "cargo": "Presidente",
-               "dt": data, "ht": hora, "and": "p", "md": "n", "tf": "n", "dv": "s",
-               "ts": ts, "st": st, "te": te, "est": est, "esi": esi, "c": c, "a": esi - c,
-               "tv": tv, "vv": vv, "vb": round((tv - vv) * 0.35), "tvn": tv - vv - round((tv - vv) * 0.35),
-               "van": 0, "vansj": 0}
+CANDIDATOS = [[13, "LULA", "PT", 0, "n", "", 1],
+              [22, "FLÁVIO BOLSONARO", "PL", 0, "n", "", 2]]
+
+
+def preencher_inicial(ws_dados):
+    """Antes da 1ª leitura do TSE: só os candidatos do 2º turno, sem votos."""
+    iniciais = {"ele": "6258", "t": "2", "tpabr": "br", "cdabr": "br", "cargo": "Presidente",
+                "and": "n", "md": "n", "tf": "n", "dv": "n"}
     for i, (k, _) in enumerate(CAMPOS_RESUMO, start=2):
-        ws_dados.cell(i, 2, valores[k])
-    cands = [[11, "CANDIDATO A (DEMO)", "PART-A", v1, "n", "", 2],
-             [22, "CANDIDATO B (DEMO)", "PART-B", v2, "n", "", 1]]
-    for r, cand in enumerate(cands, start=2):
+        ws_dados.cell(i, 2, iniciais.get(k, 0 if k not in ("dt", "ht") else ""))
+    for r, cand in enumerate(CANDIDATOS, start=2):
         for j, v in enumerate(cand):
             ws_dados.cell(r, 5 + j, v)
-    for r, linha in enumerate(demo, start=2):
-        for j, v in enumerate(linha, start=1):
-            ws_hist.cell(r, j, v)
 
 
 def formula_prob(r):
@@ -221,8 +192,8 @@ def aba_historico(wb):
         c = ws.cell(1, j, txt)
         c.font = CAB
         c.fill = FUNDO_AZUL
-    calc = ["% seções", "% eleitorado", "% válidos cand.1", "% válidos cand.2",
-            "Válidos restantes (estim.)", "Fatia que o cand.1 precisa", "Prob. cand.1", "Prob. cand.2"]
+    calc = ["% seções", "% eleitorado", "% válidos Lula", "% válidos Flávio",
+            "Válidos restantes (estim.)", "Fatia que Lula precisa", "Prob. Lula", "Prob. Flávio"]
     for j, txt in enumerate(calc, start=14):
         c = ws.cell(1, j, txt)
         c.font = CAB
@@ -420,10 +391,10 @@ def aba_painel(wb, ws_hist):
         ws.add_chart(ch, ancora)
 
     dispersao("Probabilidade de vitória × apuração",
-              [(20, COR1, "Candidato 1"), (21, COR2, "Candidato 2")],
+              [(20, COR1, "Lula (13)"), (21, COR2, "Flávio Bolsonaro (22)")],
               "Probabilidade", "A15")
     dispersao("% dos votos válidos × apuração",
-              [(16, COR1, "Candidato 1"), (17, COR2, "Candidato 2")],
+              [(16, COR1, "Lula (13)"), (17, COR2, "Flávio Bolsonaro (22)")],
               "% válidos", "H15", y_max=0.65, y_min=0.35)
 
     bar = BarChart()
@@ -542,12 +513,12 @@ def aba_como_usar(wb):
              "Para governador, troque Abrangência para a UF (ex.: sp) e Cargo para 3. Se o TSE usar outro "
              "caminho, cole a URL exata em Config!B8 (veja o link do JSON na aba Documentos de "
              "resultados.tse.jus.br)."),
-        ("", "Apague os dados de demonstração: Dados!A2:B40 e Dados!E2:K20 (só os valores) e "
-             "Histórico!A2:L1001."),
+        ("", "Caminho mais simples: o painel web da pasta painel-ao-vivo (dois cliques, já conectado). "
+             "Esta planilha é a alternativa para quem quer os números no Excel ou no Google Planilhas."),
         ("2A. Excel (Microsoft 365 / 2016+) — Power Query", None),
         ("", "Arquivo > Opções > Central de Confiabilidade/Privacidade > Power Query: marque "
              "'Ignorar os níveis de privacidade' (necessário porque a consulta usa a URL da célula Config!B12)."),
-        ("", "Apague também os CABEÇALHOS: Dados!A1:B1, Dados!E1:K1 e Histórico!A1:L1 (as consultas recriam)."),
+        ("", "Apague (tecla Delete) Dados!A1:B40, Dados!E1:K20 e Histórico!A1:L1: as consultas recriam esses dados e cabeçalhos."),
         ("", "Dados > Obter Dados > De Outras Fontes > Consulta Nula. Página Inicial > Editor Avançado. "
              "Cole o bloco 'TSE' do arquivo powerquery_tse.m e renomeie a consulta para TSE."),
         ("", "Repita para Resumo, Candidatos e tbHistorico (os nomes precisam ser exatamente esses)."),
@@ -598,7 +569,7 @@ def main():
     aba_config(wb)
     ws_dados = aba_dados(wb)
     ws_hist = aba_historico(wb)
-    preencher_demo(ws_dados, ws_hist, simular_demo())
+    preencher_inicial(ws_dados)
     aba_painel(wb, ws_hist)
     aba_regras(wb)
     aba_como_usar(wb)
