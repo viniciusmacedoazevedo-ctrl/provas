@@ -22,6 +22,13 @@ O navegador abre sozinho em `http://localhost:8765`. **Deixe a janela preta aber
 - Gráficos de probabilidade e de % ao longo da apuração.
 - Exportação do histórico em CSV, que abre no Excel.
 
+**Análise por estado** (consulta os 27 estados + exterior a cada rodada, além do total nacional):
+
+- **Projeção estado a estado:** os votos que faltam em cada UF são divididos pela preferência daquele estado. Enquanto o estado apurou pouco, a preferência mistura o % atual com o resultado de Lula × Flávio no 1º turno; acima de 20% apurado, vale só o % atual. A tabela mostra % apurado, votos de cada um, 1º turno, votos que faltam e saldo projetado por estado.
+- **Dupla checagem nacional × soma dos estados:** mostra os dois totais lado a lado e a diferença. Se o total nacional travar enquanto os estados seguem, o modo "automático" passa a usar a soma dos estados no placar.
+- **Abstenção por estado, 1º × 2º turno:** a abstenção do 2º turno (nas seções já apuradas) comparada com a final do 1º turno, com a variação em p.p. em barra, seta de aumentou/diminuiu e a linha de tendência do estado ao longo da apuração.
+- **Exportar estados (CSV):** gera a planilha com votos e abstenção por estado.
+
 **Para testar antes de domingo:** abra "Configuração e teste da conexão" e escolha "1º turno · Presidente". Esse arquivo já está publicado, então dá para conferir se a conexão funciona. Depois volte para "2º turno". Se o TSE publicar o arquivo em outro caminho, escolha "URL personalizada" e cole o endereço. O endereço aparece na aba "Documentos" de resultados.tse.jus.br.
 
 **Endereço padrão:** `https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json`. O código da eleição é 6258 (2º turno); o 1º turno é 6257.
@@ -37,9 +44,10 @@ A mesma conta da probabilidade, em Excel ou Google Planilhas. Lula e Flávio Bol
 
 ## Como a probabilidade é calculada
 
-1. Os votos válidos que faltam são estimados assim: eleitorado das seções não totalizadas × comparecimento observado × fração de válidos.
-2. Para virar, quem está atrás precisa de `0,5 + diferença / (2 × votos que faltam)` desses votos.
-3. A probabilidade supõe que a fatia de cada candidato nos votos que faltam fica perto da fatia atual, com incerteza de ±6 p.p. Essa margem pode ser ajustada, porque as regiões são apuradas em ritmos diferentes.
-4. Quando o TSE marca a eleição como matematicamente definida (`md = e`) ou com totalização final (`tf = s`), o painel mostra 100% e 0%.
+1. Em cada estado, os votos válidos que faltam são estimados assim: eleitorado das seções não totalizadas × comparecimento × fração de válidos (do próprio estado; do 1º turno enquanto o estado não começou).
+2. Esses votos são divididos pela preferência do estado (passo acima) e somados aos votos já apurados: isso dá a projeção final.
+3. A incerteza soma uma parte local de cada estado (maior quando o estado apurou pouco) e uma parte nacional igual para todos (padrão 3 p.p., ajustável).
+4. Se os arquivos dos estados não estiverem disponíveis, o painel volta ao modelo nacional simples.
+5. Quando o TSE marca a eleição como matematicamente definida (`md = e`) ou com totalização final (`tf = s`), o painel mostra 100% e 0%.
 
 O resultado é uma estimativa. O resultado oficial é sempre o do TSE.

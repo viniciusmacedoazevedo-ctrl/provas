@@ -7,23 +7,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap">
 <style>
-/* Layout: faixa de status no topo, placar dos dois candidatos lado a lado, gráficos abaixo, configuração recolhida no rodapé */
+/* Layout: status no topo, placar dos dois candidatos, checagem nacional × estados, gráficos, tabelas por estado, configuração no rodapé */
 :root{
-  --bg:#f3f5f4; --surface:#ffffff; --fg:#14201b; --muted:#5b6b64; --line:#d5ddd9;
-  --c1:#c4122f; --c2:#1450a0; --ok:#1d7a46; --warn:#b06a00; --bad:#b3261e;
+  --bg:#f3f5f4; --surface:#ffffff; --fg:#14201b; --muted:#5b6b64; --line:#d5ddd9; --soft:#e8eeeb;
+  --c1:#c4122f; --c2:#1450a0; --ok:#1d7a46; --warn:#b06a00; --bad:#b3261e; --up:#c26a00; --down:#1d7a46;
   --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
   --f-mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#0f1513; --surface:#18211d; --fg:#e8efeb; --muted:#93a39c; --line:#2b3732;
-  --c1:#ff5a6e; --c2:#5b9cff; --ok:#4cc27e; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+  --bg:#0f1513; --surface:#18211d; --fg:#e8efeb; --muted:#93a39c; --line:#2b3732; --soft:#202a26;
+  --c1:#ff5a6e; --c2:#5b9cff; --ok:#4cc27e; --warn:#f0a43a; --bad:#ff6b5e; --up:#f0a43a; --down:#4cc27e; color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 var(--f-body)}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
 h1{font:800 clamp(1.5rem,3.2vw,2.2rem)/1.1 var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font:700 1.15rem var(--f-display);margin:0;text-wrap:balance}
 .sub{color:var(--muted);font-size:.9rem}
 .live{display:inline-flex;align-items:center;gap:8px;font:600 .8rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--muted)}
@@ -49,19 +50,41 @@ h1{font:800 clamp(1.5rem,3.2vw,2.2rem)/1.1 var(--f-display);margin:0;letter-spac
 .prob b{font:600 1.5rem var(--f-mono)}
 .chip{display:inline-block;font:600 .75rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:var(--line);color:var(--fg);justify-self:start}
 .chip.win{background:var(--ok);color:#fff}
+.chip.warn{background:var(--warn);color:#fff}
 .bar{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .bar i{display:block;height:100%;transition:width .6s}
 .mid{position:relative}
 .mid::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;border-left:2px dashed var(--fg);opacity:.5}
-.math{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:12px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.math{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 .math b{display:block;font:600 1.2rem var(--f-mono);font-variant-numeric:tabular-nums}
 .leitura{font:700 1.15rem var(--f-display)}
 .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px}
 .chart{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
-.chart h2{font:700 1rem var(--f-display);margin:0 0 6px}
+.chart h2{font-size:1rem;margin-bottom:6px}
 .chart svg{width:100%;height:auto;display:block}
-.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
 .legend span::before{content:"";display:inline-block;width:12px;height:3px;margin-right:6px;vertical-align:middle;background:var(--c)}
+.scroll{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--soft);text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.uf{font-family:var(--f-body);font-weight:600}
+td.uf small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
+tr.tot td{font-weight:600;border-top:2px solid var(--line)}
+.mini{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;vertical-align:middle;margin-left:6px}
+.mini i{display:block;height:100%;background:var(--fg)}
+.c1{color:var(--c1)} .c2{color:var(--c2)} .muted{color:var(--muted)}
+.diverge{position:relative;width:140px;height:14px;display:inline-block;vertical-align:middle}
+.diverge::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--muted)}
+.diverge i{position:absolute;top:2px;height:10px;border-radius:2px}
+.seta{font-weight:600}
+.seta.up{color:var(--up)} .seta.down{color:var(--down)}
+.check{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{font:600 .8rem var(--f-body);padding:4px 10px;border-radius:999px;border:1px solid var(--line)}
+.pill.ok{border-color:var(--ok);color:var(--ok)} .pill.warn{border-color:var(--warn);color:var(--warn)}
 details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
 summary{cursor:pointer;font:700 1rem var(--f-display)}
 .cfg{display:grid;gap:12px;margin-top:12px}
@@ -72,8 +95,7 @@ input,select,button{font:inherit;padding:8px 10px;border-radius:6px;border:1px s
 button{cursor:pointer;background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
 button.sec{background:transparent;color:var(--fg)}
 button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
-.note{font-size:.85rem;color:var(--muted);max-width:75ch}
-code{font-family:var(--f-mono);font-size:.85em;overflow-wrap:anywhere}
+.note{font-size:.85rem;color:var(--muted);max-width:80ch;margin:0}
 @media (max-width:640px){.duel{grid-template-columns:1fr}}
 </style>
 </head>
@@ -94,35 +116,61 @@ code{font-family:var(--f-mono);font-size:.85em;overflow-wrap:anywhere}
     <div class="stat"><span class="lbl">Andamento</span><b id="sAnd" style="font-size:1.05rem">–</b></div>
     <div class="stat"><span class="lbl">Totalização TSE</span><b id="sHora">–</b></div>
     <div class="stat"><span class="lbl">Comparecimento</span><b id="sComp">–</b></div>
-    <div class="stat"><span class="lbl">Brancos · Nulos</span><b id="sBN">–</b></div>
+    <div class="stat"><span class="lbl">Abstenção (1º → 2º)</span><b id="sAbst">–</b></div>
   </section>
 
   <section class="duel" aria-label="Placar">
-    <article class="cand" id="k1" style="--c:var(--c1)">
+    <article class="cand" style="--c:var(--c1)">
       <span class="lbl" id="k1num">13 · PT</span>
       <div class="nome" id="k1nome">LULA</div>
       <div class="pct" id="k1pct">–</div>
       <div class="votos" id="k1vot">– votos</div>
       <div class="prob"><span class="lbl">Prob. de vitória</span><b id="k1prob">–</b></div>
+      <div class="prob"><span class="lbl">Projeção final</span><b id="k1proj" style="font-size:1.1rem">–</b></div>
       <span class="chip" id="k1chip">Aguardando</span>
     </article>
-    <article class="cand" id="k2" style="--c:var(--c2)">
+    <article class="cand" style="--c:var(--c2)">
       <span class="lbl" id="k2num">22 · PL</span>
       <div class="nome" id="k2nome">FLÁVIO BOLSONARO</div>
       <div class="pct" id="k2pct">–</div>
       <div class="votos" id="k2vot">– votos</div>
       <div class="prob"><span class="lbl">Prob. de vitória</span><b id="k2prob">–</b></div>
+      <div class="prob"><span class="lbl">Projeção final</span><b id="k2proj" style="font-size:1.1rem">–</b></div>
       <span class="chip" id="k2chip">Aguardando</span>
     </article>
   </section>
 
   <div class="mid"><div class="bar" aria-label="Divisão dos votos válidos"><i id="b1" style="width:50%;background:var(--c1)"></i><i id="b2" style="width:50%;background:var(--c2)"></i></div></div>
 
-  <section class="math" aria-label="Situação matemática">
-    <div><span class="lbl">Diferença</span><b id="mDif">–</b></div>
-    <div><span class="lbl">Votos válidos que faltam (estim.)</span><b id="mRest">–</b></div>
-    <div><span class="lbl">Quem está atrás precisa de</span><b id="mPrec">–</b><span class="note">dos votos que faltam</span></div>
-    <div><span class="lbl">Leitura</span><div class="leitura" id="mLeit">–</div></div>
+  <section class="panel" aria-label="Situação matemática">
+    <div class="panel-head"><h2>Situação matemática</h2><span class="pill" id="modelo">Modelo: –</span></div>
+    <div class="math">
+      <div><span class="lbl">Diferença</span><b id="mDif">–</b></div>
+      <div><span class="lbl">Votos válidos que faltam (estim.)</span><b id="mRest">–</b></div>
+      <div><span class="lbl">Quem está atrás precisa de</span><b id="mPrec">–</b><span class="note">dos votos que faltam (média nacional)</span></div>
+      <div><span class="lbl">Saldo projetado do que falta</span><b id="mSaldo">–</b></div>
+      <div><span class="lbl">Leitura</span><div class="leitura" id="mLeit">–</div></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Dupla checagem">
+    <div class="panel-head">
+      <h2>Dupla checagem: total nacional × soma dos estados</h2>
+      <label class="sub" for="fonte">Placar usa
+        <select id="fonte">
+          <option value="auto">o mais atualizado (automático)</option>
+          <option value="nac">o total nacional do TSE</option>
+          <option value="uf">a soma dos estados</option>
+        </select>
+      </label>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Fonte</th><th>Seções</th><th id="hc1">Lula</th><th id="hc2">Flávio</th><th>Abstenção</th><th>Atualizado</th></tr></thead>
+        <tbody id="tbCheck"><tr><td colspan="6" class="muted">Aguardando dados</td></tr></tbody>
+      </table>
+    </div>
+    <div class="check"><span class="pill" id="checkStatus">–</span><span class="note" id="checkNota"></span></div>
   </section>
 
   <section class="charts">
@@ -138,7 +186,29 @@ code{font-family:var(--f-mono);font-size:.85em;overflow-wrap:anywhere}
     </div>
   </section>
 
-  <p class="note">A probabilidade é uma estimativa: supõe que a fatia de cada candidato nas urnas que ainda faltam fica perto da fatia atual, com a incerteza escolhida abaixo (as regiões são apuradas em ritmos diferentes). Quando o TSE marca a eleição como matematicamente definida ou com totalização final, o painel mostra 100% / 0%. O resultado oficial é sempre o do TSE.</p>
+  <section class="panel" aria-label="Estados">
+    <div class="panel-head"><h2>Apuração e projeção por estado</h2><span class="sub" id="ufCob">–</span></div>
+    <p class="note">Cada estado projeta o que falta com a própria preferência: o % atual do estado, misturado com o resultado de Lula × Flávio no 1º turno enquanto o estado ainda apurou pouco (peso do 1º turno cai a zero quando o estado passa de 20% apurado). O saldo é quanto o candidato deve ganhar nos votos que ainda faltam naquele estado.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Estado</th><th>Apurado</th><th id="hu1">Lula</th><th id="hu2">Flávio</th><th>1º turno (Lula × Flávio)</th><th>Faltam (válidos)</th><th>Saldo projetado</th></tr></thead>
+        <tbody id="tbUF"><tr><td colspan="7" class="muted">Aguardando dados dos estados</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Abstenção por estado">
+    <div class="panel-head"><h2>Abstenção por estado: 2º turno × 1º turno</h2><span class="sub" id="abstResumo">–</span></div>
+    <p class="note">Abstenção = eleitores que não votaram ÷ eleitorado das seções já apuradas. O 1º turno é o resultado final de cada estado. A barra mostra a variação em pontos percentuais (laranja = aumentou, verde = diminuiu); a linha mostra a abstenção do 2º turno conforme o estado apura.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Estado</th><th>Apurado</th><th>1º turno</th><th>2º turno</th><th>Variação</th><th></th><th>Tendência no 2º turno</th></tr></thead>
+        <tbody id="tbAbst"><tr><td colspan="7" class="muted">Aguardando dados dos estados</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="note">A probabilidade é uma estimativa: soma, estado por estado, os votos que faltam pela preferência de cada estado, com incerteza local (maior onde o estado apurou pouco) e uma incerteza nacional comum a todos os estados (ajustável abaixo). Quando o TSE marca a eleição como matematicamente definida ou com totalização final, o painel mostra 100% / 0%. O resultado oficial é sempre o do TSE.</p>
 
   <details id="cfgBox">
     <summary>Configuração e teste da conexão</summary>
@@ -148,29 +218,29 @@ code{font-family:var(--f-mono);font-size:.85em;overflow-wrap:anywhere}
           <select id="preset">
             <option value="p2">2º turno · Presidente (25/10) – oficial</option>
             <option value="p1">1º turno · Presidente (04/10) – oficial, para testar agora</option>
-            <option value="g2">2º turno · Governador (escolha a UF)</option>
             <option value="custom">URL personalizada</option>
           </select>
         </label>
-        <label for="uf">UF (governador)
-          <select id="uf"></select>
-        </label>
         <label for="intervalo">Atualizar a cada
-          <select id="intervalo"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">1 min</option></select>
+          <select id="intervalo"><option value="20">20 s</option><option value="30" selected>30 s</option><option value="60">1 min</option></select>
         </label>
-        <label for="sigma">Incerteza dos votos que faltam
-          <select id="sigma"><option value="0.04">4 p.p. (confiante)</option><option value="0.06" selected>6 p.p. (padrão)</option><option value="0.08">8 p.p. (cauteloso)</option></select>
+        <label for="sigma">Incerteza nacional
+          <select id="sigma"><option value="0.02">2 p.p. (confiante)</option><option value="0.03" selected>3 p.p. (padrão)</option><option value="0.05">5 p.p. (cauteloso)</option></select>
+        </label>
+        <label for="estados">Arquivos por estado
+          <select id="estados"><option value="sim" selected>Consultar os 27 estados + exterior</option><option value="nao">Só o total nacional</option></select>
         </label>
       </div>
-      <label for="url" class="lbl">URL do arquivo do TSE (edite se o TSE publicar em outro caminho)</label>
+      <label for="url" class="lbl">URL do arquivo nacional do TSE (os arquivos dos estados seguem o mesmo caminho, trocando "br" pela sigla da UF)</label>
       <input id="url" spellcheck="false">
       <div class="row">
         <button id="btnAgora" type="button">Atualizar agora</button>
         <button id="btnCsv" type="button" class="sec">Exportar histórico (CSV)</button>
+        <button id="btnCsvUF" type="button" class="sec">Exportar estados (CSV)</button>
         <button id="btnLimpar" type="button" class="sec">Limpar histórico</button>
         <span class="note" id="limparMsg"></span>
       </div>
-      <p class="note">Conexão: <span id="modo">–</span>. Próxima consulta em <span id="cont">–</span> s. O histórico fica salvo neste navegador; se fechar e abrir de novo, os pontos continuam.</p>
+      <p class="note">Conexão: <span id="modo">–</span>. Estados do 2º turno: <span id="cobUF">–</span>. 1º turno (comparação): <span id="cob1T">–</span>. Próxima consulta em <span id="cont">–</span> s. O histórico fica salvo neste navegador.</p>
     </div>
   </details>
 </div>
@@ -179,21 +249,32 @@ code{font-family:var(--f-mono);font-size:.85em;overflow-wrap:anywhere}
 "use strict";
 const ELEICAO = {ano:"ele2026", t1:6257, t2:6258};
 const BASE = "https://resultados.tse.jus.br/oficial";
-const UFS = "ac al am ap ba ce df es go ma mg ms mt pa pb pe pi pr rj rn ro rr rs sc se sp to".split(" ");
+const UFS = {ac:"Acre",al:"Alagoas",am:"Amazonas",ap:"Amapá",ba:"Bahia",ce:"Ceará",df:"Distrito Federal",es:"Espírito Santo",go:"Goiás",ma:"Maranhão",mg:"Minas Gerais",ms:"Mato Grosso do Sul",mt:"Mato Grosso",pa:"Pará",pb:"Paraíba",pe:"Pernambuco",pi:"Piauí",pr:"Paraná",rj:"Rio de Janeiro",rn:"Rio Grande do Norte",ro:"Rondônia",rr:"Roraima",rs:"Rio Grande do Sul",sc:"Santa Catarina",se:"Sergipe",sp:"São Paulo",to:"Tocantins",zz:"Exterior"};
+const SIGLAS = Object.keys(UFS);
 const $ = id => document.getElementById(id);
 const fmtN = n => Number.isFinite(n) ? Math.round(n).toLocaleString("pt-BR") : "–";
 const fmtP = (x, d=2) => Number.isFinite(x) ? (x*100).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}) + "%" : "–";
+const fmtPP = x => Number.isFinite(x) ? (x >= 0 ? "+" : "−") + Math.abs(x*100).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " p.p." : "–";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} }
+};
 
-/* ---------- configuração (lembrada neste navegador) ---------- */
-function lerCfg(){ try { return JSON.parse(localStorage.getItem("apuracao:cfg")) || {}; } catch { return {}; } }
-function salvarCfg(){ try { localStorage.setItem("apuracao:cfg", JSON.stringify({preset:$("preset").value, uf:$("uf").value, url:$("url").value, intervalo:$("intervalo").value, sigma:$("sigma").value})); } catch {} }
-function montarUrl(preset, uf){
-  const pad = (n, k) => String(n).padStart(k, "0");
-  const arq = (ele, abr, cargo) => `${BASE}/${ELEICAO.ano}/${ele}/dados/${abr}/${abr}-c${pad(cargo,4)}-e${pad(ele,6)}-u.json`;
-  if (preset === "p2") return arq(ELEICAO.t2, "br", 1);
-  if (preset === "p1") return arq(ELEICAO.t1, "br", 1);
-  if (preset === "g2") return arq(ELEICAO.t2, uf, 3);
-  return null;
+/* ---------- URLs ---------- */
+const pad = (n, k) => String(n).padStart(k, "0");
+function montarUrl(preset){
+  const ele = preset === "p1" ? ELEICAO.t1 : ELEICAO.t2;
+  return `${BASE}/${ELEICAO.ano}/${ele}/dados/br/br-c0001-e${pad(ele,6)}-u.json`;
+}
+// troca abrangência (br -> uf) e, se pedido, o código da eleição no mesmo caminho
+const RE_ARQ = /\/(\d+)\/dados\/br\/br-c(\d{4})-e(\d{6})-u\.json$/;
+function urlUF(url, uf, ele){
+  const m = url.match(RE_ARQ);
+  if (!m) return null;
+  const e = ele || Number(m[1]);
+  return url.replace(RE_ARQ, `/${e}/dados/${uf}/${uf}-c${m[2]}-e${pad(e,6)}-u.json`);
 }
 
 /* ---------- leitura do JSON do TSE ---------- */
@@ -203,7 +284,6 @@ function num(x){
   const s = String(x).trim();
   return (s.includes(",") ? Number(s.replace(/\./g, "").replace(",", ".")) : Number(s)) || 0;
 }
-// Formato EA20 (unificado, -u.json). Aceita também o formato "simplificado" antigo (-r.json, 2022).
 function parseTSE(j){
   const r = {ele:j.ele, t:j.t, f:j.f, dt:j.dt||"", ht:j.ht||"", and:(j.and||"").toLowerCase(),
              md:(j.md||"").toLowerCase(), tf:(j.tf||"").toLowerCase(), dv:(j.dv||"s").toLowerCase(), cands:[]};
@@ -215,11 +295,10 @@ function parseTSE(j){
     const s = j.s||{}, e = j.e||{}, v = j.v||{};
     Object.assign(r, {ts:num(s.ts), st:num(s.st), te:num(e.te), est:num(e.est), esi:num(e.esi), c:num(e.c), a:num(e.a),
                       tv:num(v.tv), vv:num(v.vv), vb:num(v.vb), tvn:num(v.tvn)});
-  } else if (Array.isArray(j.cand)) {
+  } else if (Array.isArray(j.cand)) { // formato simplificado antigo (-r.json)
     for (const c of j.cand) r.cands.push({n:num(c.n), nome:c.nm||"", partido:(c.cc||"").split(/[ -]/)[0], vap:num(c.vap), e:(c.e||"").toLowerCase(), st:c.st||""});
-    const ts = num(j.s), st = num(j.st), te = num(j.e);
-    Object.assign(r, {ts, st, te, est: ts ? te*st/ts : 0, esi: ts ? te*st/ts : 0, c:num(j.c), a:num(j.a),
-                      vv:num(j.vv), vb:num(j.vb), tvn:num(j.tvn)});
+    const ts = num(j.s), st = num(j.st), te = num(j.e), est = ts ? te*st/ts : 0;
+    Object.assign(r, {ts, st, te, est, esi:est, c:num(j.c), a:num(j.a), vv:num(j.vv), vb:num(j.vb), tvn:num(j.tvn)});
     r.tv = r.vv + r.vb + r.tvn + num(j.van);
   } else throw new Error("o arquivo não está no formato de resultado do TSE");
   return r;
@@ -232,42 +311,9 @@ function escolherDois(cands){
     const c13 = cands.find(c => c.n === 13), c22 = cands.find(c => c.n === 22);
     par = c13 && c22 ? [c13, c22] : cands.slice().sort((a, b) => b.vap - a.vap).slice(0, 2);
   }
-  return par.sort((a, b) => a.n - b.n); // ordem fixa pelo número de urna (13 à esquerda)
+  return par.sort((a, b) => a.n - b.n);
 }
-
-/* ---------- modelo de probabilidade ---------- */
-function calcular(r, sigma){
-  const [k1, k2] = escolherDois(r.cands);
-  const v1 = k1 ? k1.vap : 0, v2 = k2 ? k2.vap : 0, soma = v1 + v2;
-  const sh1 = soma > 0 ? v1/soma : 0.5;
-  const comp = r.esi > 0 ? r.c/r.esi : 0.79;
-  const val = r.tv > 0 ? r.vv/r.tv : 0.95;
-  const rest = Math.max(0, r.te - r.est) * comp * val;
-  let p1;
-  const definido = r.tf === "s" || r.md === "e";
-  if (definido && (k1?.e === "s" || k2?.e === "s")) p1 = k1?.e === "s" ? 1 : 0;
-  else if (soma === 0) p1 = 0.5;
-  else if (rest <= 0) p1 = v1 > v2 ? 1 : v1 < v2 ? 0 : 0.5;
-  else p1 = 1 - normCdf((0.5 - (v1 - v2)/(2*rest) - sh1) / sigma);
-  const precisa = rest > 0 ? 0.5 + Math.abs(v1 - v2)/(2*rest) : (v1 === v2 ? 0.5 : Infinity);
-  return {k1, k2, v1, v2, sh1, rest, p1, precisa, definido, pst: r.ts ? r.st/r.ts : 0};
-}
-function normCdf(z){ // Abramowitz-Stegun 7.1.26
-  const t = 1/(1 + 0.3275911*Math.abs(z)/Math.SQRT2);
-  const y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-z*z/2);
-  return z >= 0 ? (1 + y)/2 : (1 - y)/2;
-}
-
-/* ---------- histórico (por URL, salvo neste navegador) ---------- */
-const chaveHist = () => "apuracao:hist:" + $("url").value;
-function lerHist(){ try { return JSON.parse(localStorage.getItem(chaveHist())) || []; } catch { return []; } }
-let historico = [];
-function registrar(r, k){
-  const id = r.dt + " " + r.ht;
-  if (historico.length && historico[historico.length-1].id === id) return;
-  historico.push({id, pst:k.pst, v1:k.v1, v2:k.v2, sh1:k.sh1, rest:k.rest, p1:k.p1, ts:r.ts, st:r.st, te:r.te, est:r.est, c:r.c, vv:r.vv});
-  try { localStorage.setItem(chaveHist(), JSON.stringify(historico.slice(-3000))); } catch {}
-}
+const votosDe = (r, n) => (r && r.cands.find(c => c.n === n) || {vap:0}).vap;
 
 /* ---------- busca: servidor local (proxy) primeiro, depois direto no TSE ---------- */
 let modo = "";
@@ -280,50 +326,339 @@ async function buscar(url){
     let resp;
     try { resp = await fetch(u, {cache:"no-store"}); }
     catch (e) { erro = new Error(nome === "direto no TSE" ? "o navegador bloqueou o acesso direto ao TSE (use o iniciador do painel)" : e.message); continue; }
-    if (resp.ok) { modo = nome; return await resp.json(); }
-    // sem o cabeçalho do nosso servidor, a página está sendo servida por outro lugar: tenta direto
+    if (resp.ok) { modo = nome; return parseTSE(await resp.json()); }
     if (nome === "servidor local" && !resp.headers.get("x-proxy-tse")) continue;
     throw new Error((await resp.text()) || `HTTP ${resp.status}`);
   }
   throw erro;
 }
+// baixa vários arquivos com no máximo 8 ao mesmo tempo; falha de um não derruba os outros
+async function buscarVarios(pares){
+  const out = {}, fila = pares.slice();
+  async function trabalhador(){
+    while (fila.length) {
+      const [chave, url] = fila.shift();
+      try { out[chave] = await buscar(url); } catch { /* estado indisponível nesta rodada */ }
+    }
+  }
+  await Promise.all(Array.from({length:8}, trabalhador));
+  return out;
+}
+
+/* ---------- estado do painel ---------- */
+const S = {nac:null, uf:{}, uf1:{}, nums:[13, 22], nomes:{13:["LULA","PT"], 22:["FLÁVIO BOLSONARO","PL"]}, hist:[], histUF:{}, ultimoId:""};
+const chave = s => "apuracao:" + s + ":" + $("url").value;
+
+function somarUF(fonte){
+  const t = {n:0, v1:0, v2:0, ts:0, st:0, te:0, est:0, esi:0, c:0, a:0, tv:0, vv:0, vb:0, tvn:0, ht:"", dt:""};
+  for (const uf of SIGLAS) {
+    const r = fonte[uf];
+    if (!r) continue;
+    t.n++;
+    t.v1 += votosDe(r, S.nums[0]); t.v2 += votosDe(r, S.nums[1]);
+    for (const k of ["ts","st","te","est","esi","c","a","tv","vv","vb","tvn"]) t[k] += r[k] || 0;
+    const id = (r.dt||"").split("/").reverse().join("") + r.ht;
+    if (id > t.id || !t.id) { t.id = id; t.ht = r.ht; t.dt = r.dt; }
+  }
+  return t;
+}
+const normCdf = z => { // Abramowitz-Stegun 7.1.26
+  const t = 1/(1 + 0.3275911*Math.abs(z)/Math.SQRT2);
+  const y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-z*z/2);
+  return z >= 0 ? (1 + y)/2 : (1 - y)/2;
+};
+
+/* Modelo por estado: cada UF projeta os votos que faltam com a própria preferência.
+   peso w do resultado atual do estado = min(1, 5 × % apurado); o resto vem do 1º turno (Lula × Flávio).
+   Variância = local (independente por estado, maior com w baixo) + nacional (mesmo desvio em todos). */
+function modeloEstados(sigmaNat){
+  const [n1, n2] = S.nums;
+  let base1 = 0, base2 = 0, M = 0, F1 = 0, F2 = 0, Rtot = 0, varLoc = 0, cobertos = 0;
+  const porUF = {};
+  const somaAtual = somarUF(S.uf);
+  const shNac = somaAtual.v1 + somaAtual.v2 > 0 ? somaAtual.v1/(somaAtual.v1 + somaAtual.v2) : 0.5;
+  for (const uf of SIGLAS) {
+    const r = S.uf[uf], p = S.uf1[uf];
+    if (!r && !p) continue;
+    cobertos++;
+    const v1 = votosDe(r, n1), v2 = votosDe(r, n2);
+    const pst = r && r.ts ? r.st/r.ts : 0;
+    const w = Math.min(1, pst*5);
+    const mix = (atual, prior, padrao) => atual == null ? (prior ?? padrao) : prior == null ? atual : w*atual + (1 - w)*prior;
+    const p1v = p ? votosDe(p, n1) : 0, p2v = p ? votosDe(p, n2) : 0;
+    const sh = mix(v1 + v2 > 0 ? v1/(v1 + v2) : null, p1v + p2v > 0 ? p1v/(p1v + p2v) : null, shNac);
+    const comp = mix(r && r.esi > 0 ? r.c/r.esi : null, p && p.esi > 0 ? p.c/p.esi : null, 0.79);
+    const val = mix(r && r.tv > 0 ? r.vv/r.tv : null, p && p.tv > 0 ? p.vv/p.tv : null, 0.95);
+    const te = (r && r.te) || (p && p.te) || 0;
+    const R = Math.max(0, te - ((r && r.est) || 0)) * comp * val;
+    const sigLoc = 0.02 + 0.06*(1 - w);
+    base1 += v1; base2 += v2;
+    M += (v1 - v2) + R*(2*sh - 1);
+    F1 += v1 + R*sh; F2 += v2 + R*(1 - sh);
+    Rtot += R;
+    varLoc += Math.pow(2*R*sigLoc, 2);
+    porUF[uf] = {R, sh, saldo: R*(2*sh - 1), w, prior: p1v + p2v > 0 ? p1v/(p1v + p2v) : null};
+  }
+  const sd = Math.sqrt(varLoc + Math.pow(2*sigmaNat*Rtot, 2));
+  const p1 = sd > 0 ? normCdf(M/sd) : (M > 0 ? 1 : M < 0 ? 0 : 0.5);
+  return {ok: SIGLAS.filter(u => u !== "zz").every(u => S.uf[u] || S.uf1[u]), cobertos, p1, M, F1, F2, Rtot, porUF, saldo: M - (base1 - base2)};
+}
+// Modelo nacional (reserva, quando os estados não estão disponíveis)
+function modeloNacional(r, sigmaNat){
+  const v1 = votosDe(r, S.nums[0]), v2 = votosDe(r, S.nums[1]), soma = v1 + v2;
+  const sh = soma > 0 ? v1/soma : 0.5;
+  const R = Math.max(0, r.te - r.est) * (r.esi > 0 ? r.c/r.esi : 0.79) * (r.tv > 0 ? r.vv/r.tv : 0.95);
+  const sigma = sigmaNat*2; // sem dados por estado a incerteza é maior
+  let p1;
+  if (soma === 0) p1 = 0.5;
+  else if (R <= 0) p1 = v1 > v2 ? 1 : v1 < v2 ? 0 : 0.5;
+  else p1 = 1 - normCdf((0.5 - (v1 - v2)/(2*R) - sh)/sigma);
+  return {ok:true, p1, Rtot:R, F1: v1 + R*sh, F2: v2 + R*(1 - sh), saldo: R*(2*sh - 1), porUF:{}};
+}
+
+/* ---------- ciclo de atualização ---------- */
+let timer, restante = 0;
+function status(txt, cls){ $("liveTxt").textContent = txt; $("live").className = "live " + (cls || ""); }
+function aviso(txt, cls){ const b = $("banner"); b.hidden = !txt; b.textContent = txt || ""; b.className = "banner " + (cls || ""); }
+const comEstados = () => $("estados").value === "sim" && RE_ARQ.test($("url").value);
+
+async function carregarPrimeiroTurno(){
+  if (!comEstados()) return;
+  const url = $("url").value;
+  const cache = store.get("apuracao:1t:" + url, null);
+  if (cache && Object.keys(cache).length >= SIGLAS.length) { S.uf1 = cache; return; }
+  const pares = SIGLAS.filter(uf => !(cache && cache[uf])).map(uf => [uf, urlUF(url, uf, ELEICAO.t1)]);
+  const novos = await buscarVarios(pares);
+  S.uf1 = Object.assign({}, cache || {}, novos);
+  // guarda só o necessário para não lotar o armazenamento do navegador
+  for (const uf in S.uf1) { const r = S.uf1[uf]; r.cands = r.cands.filter(c => c.n === 13 || c.n === 22 || S.nums.includes(c.n)); }
+  store.set("apuracao:1t:" + url, S.uf1);
+}
+
+async function ciclo(){
+  clearTimeout(timer);
+  const url = $("url").value.trim();
+  let erroNac = null;
+  try { S.nac = await buscar(url); } catch (e) { erroNac = e; }
+  if (S.nac) {
+    const dois = escolherDois(S.nac.cands);
+    if (dois.length === 2) { S.nums = dois.map(c => c.n); dois.forEach(c => S.nomes[c.n] = [c.nome, c.partido]); }
+  }
+  if (comEstados()) {
+    if (Object.keys(S.uf1).length < SIGLAS.length) await carregarPrimeiroTurno();
+    const novos = await buscarVarios(SIGLAS.map(uf => [uf, urlUF(url, uf)]));
+    Object.assign(S.uf, novos); // estado que falhou nesta rodada mantém o último valor
+  }
+  const nUF = Object.keys(S.uf).length;
+  if (!S.nac && !nUF) {
+    status("Sem conexão", "err");
+    aviso(`Não consegui ler o arquivo do TSE: ${erroNac ? erroNac.message : "sem resposta"}. Antes das 17h do dia 25/10 o arquivo do 2º turno pode ainda não existir. ` +
+          (location.protocol === "file:" ? "Abra o painel pelo iniciador (iniciar-windows.bat ou iniciar-mac-linux.sh)." : "Para testar agora, escolha o 1º turno em Configuração."), "err");
+  } else {
+    const r = S.nac;
+    if (r && r.dv === "n") aviso("O TSE ainda não liberou a divulgação dos votos (começa às 17h de Brasília). O painel continua tentando.", "info");
+    else if (r && r.f === "s") aviso("Atenção: este arquivo é do ambiente SIMULADO do TSE (f = s), não é resultado real.", "info");
+    else if (!r) aviso("O total nacional não respondeu nesta rodada; o placar está usando a soma dos estados.", "info");
+    else aviso("");
+    renderTudo();
+    status("Ao vivo · " + new Date().toLocaleTimeString("pt-BR"), "on");
+  }
+  $("modo").textContent = modo || "–";
+  $("cobUF").textContent = comEstados() ? `${nUF} de ${SIGLAS.length}` : "desligado";
+  $("cob1T").textContent = comEstados() ? `${Object.keys(S.uf1).length} de ${SIGLAS.length}` : "desligado";
+  restante = Number($("intervalo").value);
+  timer = setTimeout(ciclo, restante*1000);
+}
+setInterval(() => { restante = Math.max(0, restante - 1); $("cont").textContent = restante; }, 1000);
+
+/* ---------- escolha da fonte do placar ---------- */
+function fonteAtual(){
+  const nac = S.nac ? {v1:votosDe(S.nac, S.nums[0]), v2:votosDe(S.nac, S.nums[1]), ts:S.nac.ts, st:S.nac.st, te:S.nac.te, est:S.nac.est,
+                       esi:S.nac.esi, c:S.nac.c, a:S.nac.a, tv:S.nac.tv, vv:S.nac.vv, vb:S.nac.vb, tvn:S.nac.tvn, dt:S.nac.dt, ht:S.nac.ht} : null;
+  const uf = comEstados() && Object.keys(S.uf).length ? somarUF(S.uf) : null;
+  const ufCompleto = uf && uf.n === SIGLAS.length;
+  const escolha = $("fonte").value;
+  let usar;
+  if (escolha === "nac") usar = nac ? "nac" : "uf";
+  else if (escolha === "uf") usar = ufCompleto || !nac ? "uf" : "nac";
+  else usar = nac && (!ufCompleto || nac.st >= uf.st) ? "nac" : "uf";
+  return {nac, uf, ufCompleto, usar, dados: usar === "nac" ? nac : uf};
+}
 
 /* ---------- desenho ---------- */
-function setTxt(id, t){ $(id).textContent = t; }
-function render(r, k){
-  const and = r.tf === "s" ? "Totalização final" : r.and === "f" ? "Finalizada" : r.and === "p" ? "Em andamento" : "Não iniciada";
-  setTxt("sPst", fmtP(k.pst)); $("mPst").style.width = (k.pst*100) + "%";
+const setTxt = (id, t) => { $(id).textContent = t; };
+function renderTudo(){
+  const F = fonteAtual(), d = F.dados;
+  const sigma = Number($("sigma").value);
+  const [n1, n2] = S.nums;
+  let mod = comEstados() && Object.keys(S.uf).length ? modeloEstados(sigma) : null;
+  if (!mod || !mod.ok) mod = S.nac ? modeloNacional(S.nac, sigma) : mod;
+  const nomeModelo = mod && mod.cobertos ? `por estado (${mod.cobertos} de 28)` : "nacional (sem dados por estado)";
+  setTxt("modelo", "Modelo: " + nomeModelo);
+
+  // o TSE define o resultado: md = e (matematicamente definido) ou tf = s (totalização final)
+  const definido = S.nac && (S.nac.tf === "s" || S.nac.md === "e");
+  const eleito = definido ? S.nac.cands.find(c => c.e === "s" && S.nums.includes(c.n)) : null;
+  let p1 = mod ? mod.p1 : 0.5;
+  if (eleito) p1 = eleito.n === n1 ? 1 : 0;
+  const soma = d.v1 + d.v2;
+  if (!soma && !eleito) p1 = NaN;
+
+  const pst = d.ts ? d.st/d.ts : 0;
+  const and = S.nac ? (S.nac.tf === "s" ? "Totalização final" : S.nac.and === "f" ? "Finalizada" : S.nac.and === "p" ? "Em andamento" : "Não iniciada") : "Soma dos estados";
+  setTxt("sPst", fmtP(pst)); $("mPst").style.width = (pst*100) + "%";
   setTxt("sAnd", and);
-  setTxt("sHora", r.ht ? `${r.ht.slice(0,5)} · ${r.dt.slice(0,5)}` : "–");
-  setTxt("sComp", r.esi ? fmtP(r.c/r.esi) : "–");
-  setTxt("sBN", r.tv ? `${fmtP(r.vb/r.tv,1)} · ${fmtP(r.tvn/r.tv,1)}` : "–");
-  const fase = r.f === "s" ? " · SIMULADO" : "";
-  setTxt("sub", `${r.cargo || "Cargo"} · ${r.t === "2" || r.t === 2 ? "2º" : "1º"} turno · eleição ${r.ele}${fase}`);
-  [[k.k1, k.v1, k.p1, "1"], [k.k2, k.v2, 1 - k.p1, "2"]].forEach(([c, v, p, i]) => {
-    if (!c) return;
-    setTxt(`k${i}nome`, c.nome); setTxt(`k${i}num`, `${c.n} · ${c.partido}`);
-    setTxt(`lg${i}a`, c.nome); setTxt(`lg${i}b`, c.nome);
-    const soma = k.v1 + k.v2;
+  setTxt("sHora", d.ht ? `${d.ht.slice(0,5)} · ${d.dt.slice(0,5)}` : "–");
+  setTxt("sComp", d.esi ? fmtP(d.c/d.esi) : "–");
+  const s1 = somarUF(S.uf1);
+  const abst2 = d.esi ? d.a/d.esi : NaN, abst1 = s1.esi ? s1.a/s1.esi : NaN;
+  setTxt("sAbst", Number.isFinite(abst2) ? (Number.isFinite(abst1) ? `${fmtP(abst1,1)} → ${fmtP(abst2,1)}` : fmtP(abst2,1)) : "–");
+  const r0 = S.nac || {};
+  setTxt("sub", `${r0.cargo || "Presidente"} · ${String(r0.t) === "1" ? "1º" : "2º"} turno · eleição ${r0.ele || "–"}${r0.f === "s" ? " · SIMULADO" : ""} · placar: ${F.usar === "nac" ? "total nacional" : "soma dos estados"}`);
+
+  [[n1, d.v1, p1, mod && mod.F1, "1"], [n2, d.v2, 1 - p1, mod && mod.F2, "2"]].forEach(([n, v, p, f, i]) => {
+    const [nome, partido] = S.nomes[n] || [String(n), ""];
+    setTxt(`k${i}nome`, nome); setTxt(`k${i}num`, `${n} · ${partido}`);
+    for (const id of [`lg${i}a`, `lg${i}b`, `hc${i}`, `hu${i}`]) setTxt(id, nome.split(" ")[0] === "FLÁVIO" ? "Flávio" : nome.charAt(0) + nome.slice(1).toLowerCase().split(" ")[0]);
+    setTxt(`lg${i}a`, nome); setTxt(`lg${i}b`, nome);
     setTxt(`k${i}pct`, soma ? fmtP(v/soma) : "–");
     setTxt(`k${i}vot`, fmtN(v) + " votos");
-    setTxt(`k${i}prob`, soma ? fmtP(p, 1) : "–");
+    setTxt(`k${i}prob`, Number.isFinite(p) ? fmtP(p, 1) : "–");
+    const fTot = mod ? mod.F1 + mod.F2 : 0;
+    setTxt(`k${i}proj`, soma && fTot ? fmtP(f/fTot, 1) : "–");
     const chip = $(`k${i}chip`);
-    const eleito = c.e === "s" && k.definido;
-    chip.textContent = eleito ? "Eleito" : !soma ? "Aguardando" : p >= 0.999 ? "Vitória praticamente certa" : p > 0.5 ? "À frente" : "Atrás";
-    chip.className = "chip" + (eleito || p >= 0.999 ? " win" : "");
+    const ganhou = eleito && eleito.n === n;
+    chip.textContent = ganhou ? "Eleito" : !soma ? "Aguardando" : p >= 0.999 ? "Vitória praticamente certa" : p > 0.5 ? "À frente na projeção" : "Atrás na projeção";
+    chip.className = "chip" + (ganhou || p >= 0.999 ? " win" : "");
   });
-  const soma = k.v1 + k.v2;
-  $("b1").style.width = (soma ? k.v1/soma*100 : 50) + "%";
-  $("b2").style.width = (soma ? k.v2/soma*100 : 50) + "%";
-  setTxt("mDif", soma ? fmtN(Math.abs(k.v1 - k.v2)) + " votos" : "–");
-  setTxt("mRest", fmtN(k.rest));
-  setTxt("mPrec", !soma ? "–" : Number.isFinite(k.precisa) && k.precisa <= 1 ? fmtP(k.precisa, 1) : "mais de 100%");
-  setTxt("mLeit", k.definido ? "Definido pelo TSE" : !soma ? "Aguardando votos" :
-    k.precisa > 1 ? "Virada impossível" : k.precisa > 0.6 ? "Virada muito difícil" : k.precisa > 0.53 ? "Virada difícil" : "Disputa aberta");
-  desenhar($("chProb"), historico.map(h => [h.pst, h.p1, 1 - h.p1]), 0, 1);
-  const pcts = historico.filter(h => h.v1 + h.v2 > 0).map(h => [h.pst, h.sh1, 1 - h.sh1]);
+  $("b1").style.width = (soma ? d.v1/soma*100 : 50) + "%";
+  $("b2").style.width = (soma ? d.v2/soma*100 : 50) + "%";
+
+  const rest = mod ? mod.Rtot : NaN;
+  const dif = Math.abs(d.v1 - d.v2);
+  const precisa = rest > 0 ? 0.5 + dif/(2*rest) : (dif ? Infinity : 0.5);
+  setTxt("mDif", soma ? fmtN(dif) + " votos" : "–");
+  setTxt("mRest", fmtN(rest));
+  setTxt("mPrec", !soma ? "–" : precisa <= 1 ? fmtP(precisa, 1) : "mais de 100%");
+  if (mod && soma) {
+    const quem = mod.saldo >= 0 ? n1 : n2;
+    setTxt("mSaldo", `${fmtN(Math.abs(mod.saldo))} p/ ${(S.nomes[quem] || [quem])[0]}`);
+  } else setTxt("mSaldo", "–");
+  setTxt("mLeit", eleito ? "Definido pelo TSE" : !soma ? "Aguardando votos" :
+    precisa > 1 ? "Virada impossível" : p1 > 0.99 || p1 < 0.01 ? "Resultado praticamente definido" :
+    p1 > 0.9 || p1 < 0.1 ? "Vantagem forte" : "Disputa aberta");
+
+  registrarHistorico(d, p1, soma ? d.v1/soma : NaN, pst);
+  desenhar($("chProb"), S.hist.filter(h => Number.isFinite(h.p1)).map(h => [h.pst, h.p1, 1 - h.p1]), 0, 1);
+  const pcts = S.hist.filter(h => Number.isFinite(h.sh1)).map(h => [h.pst, h.sh1, 1 - h.sh1]);
   const desvio = Math.max(0.05, ...pcts.map(p => Math.abs(p[1] - 0.5) + 0.02));
   desenhar($("chPct"), pcts, 0.5 - desvio, 0.5 + desvio, 0.5);
+
+  renderCheck(F);
+  renderEstados(mod);
+  renderAbstencao();
+}
+
+function registrarHistorico(d, p1, sh1, pst){
+  const id = `${d.st}|${d.v1}|${d.v2}`;
+  if (id !== S.ultimoId && d.st > 0) {
+    S.ultimoId = id;
+    S.hist.push({id, hora: new Date().toLocaleTimeString("pt-BR"), tse: `${d.dt} ${d.ht}`, pst, v1:d.v1, v2:d.v2, sh1, p1, st:d.st, ts:d.ts, abst: d.esi ? d.a/d.esi : null});
+    store.set(chave("hist"), S.hist.slice(-3000));
+  }
+  for (const uf of SIGLAS) {
+    const r = S.uf[uf];
+    if (!r || !r.st || !r.esi) continue;
+    const h = S.histUF[uf] || (S.histUF[uf] = []);
+    const ult = h[h.length - 1];
+    if (!ult || ult[0] !== r.st/r.ts) h.push([r.st/r.ts, r.a/r.esi]);
+  }
+  store.set(chave("histuf"), S.histUF);
+}
+
+function renderCheck(F){
+  const linha = (nome, x, usado) => x ? `<tr><td>${nome}${usado ? " <span class=\"chip\">no placar</span>" : ""}</td>
+    <td>${fmtP(x.ts ? x.st/x.ts : 0)}</td><td class="c1">${fmtN(x.v1)}</td><td class="c2">${fmtN(x.v2)}</td>
+    <td>${x.esi ? fmtP(x.a/x.esi, 1) : "–"}</td><td>${esc(x.ht ? x.ht + " · " + x.dt.slice(0,5) : "–")}</td></tr>` :
+    `<tr><td>${nome}</td><td colspan="5" class="muted">indisponível</td></tr>`;
+  let html = linha("Total nacional do TSE", F.nac, F.usar === "nac");
+  html += linha(F.uf ? `Soma dos estados (${F.uf.n} de 28)` : "Soma dos estados", F.uf, F.usar === "uf");
+  if (F.nac && F.uf) {
+    html += `<tr class="tot"><td>Diferença (estados − nacional)</td><td>${fmtN(F.uf.st - F.nac.st)} seções</td>
+      <td class="c1">${fmtN(F.uf.v1 - F.nac.v1)}</td><td class="c2">${fmtN(F.uf.v2 - F.nac.v2)}</td><td></td><td></td></tr>`;
+  }
+  $("tbCheck").innerHTML = html;
+  const pill = $("checkStatus"), nota = $("checkNota");
+  if (!F.nac || !F.uf) { pill.textContent = F.uf ? "Só a soma dos estados disponível" : "Só o total nacional disponível"; pill.className = "pill warn"; nota.textContent = ""; return; }
+  const dSt = F.uf.st - F.nac.st, dV = Math.abs(F.uf.v1 - F.nac.v1) + Math.abs(F.uf.v2 - F.nac.v2);
+  if (!F.ufCompleto) { pill.textContent = `Faltam ${28 - F.uf.n} estados para conferir`; pill.className = "pill warn"; nota.textContent = ""; }
+  else if (dSt === 0 && dV === 0) { pill.textContent = "Conferem"; pill.className = "pill ok"; nota.textContent = "O total nacional é igual à soma dos 27 estados + exterior."; }
+  else if (dSt > 0) { pill.textContent = `Nacional atrasado em ${fmtN(dSt)} seções`; pill.className = "pill warn";
+    nota.textContent = "Os estados já totalizaram mais seções do que o arquivo nacional mostra. Com a fonte automática, o placar passa a usar a soma dos estados."; }
+  else { pill.textContent = `Estados atrasados em ${fmtN(-dSt)} seções`; pill.className = "pill warn"; nota.textContent = "Os arquivos dos estados ainda não alcançaram o total nacional (diferença de horário de publicação)."; }
+}
+
+function renderEstados(mod){
+  if (!comEstados()) { $("tbUF").innerHTML = `<tr><td colspan="7" class="muted">Consulta por estado desligada (Configuração).</td></tr>`; setTxt("ufCob", ""); return; }
+  const [n1, n2] = S.nums;
+  const linhas = SIGLAS.map(uf => {
+    const r = S.uf[uf], p = S.uf1[uf], m = mod && mod.porUF ? mod.porUF[uf] : null;
+    const te = (r && r.te) || (p && p.te) || 0;
+    return {uf, r, p, m, te};
+  }).sort((a, b) => b.te - a.te);
+  let html = "";
+  for (const {uf, r, m} of linhas) {
+    const v1 = votosDe(r, n1), v2 = votosDe(r, n2), s = v1 + v2;
+    const pst = r && r.ts ? r.st/r.ts : 0;
+    const prior = m && m.prior != null ? `<span class="c1">${fmtP(m.prior,1)}</span> × <span class="c2">${fmtP(1 - m.prior,1)}</span>` : "–";
+    const saldo = m && m.R < 1 && s ? `<span class="muted">apurado</span>` : m && s ? `<span class="${m.saldo >= 0 ? "c1" : "c2"}">+${fmtN(Math.abs(m.saldo))} ${m.saldo >= 0 ? (S.nomes[n1]||[""])[0].split(" ")[0] : (S.nomes[n2]||[""])[0].split(" ")[0]}</span>` : (m ? `<span class="muted">${m.saldo >= 0 ? "+" : "−"}${fmtN(Math.abs(m.saldo))} (1º turno)</span>` : "–");
+    html += `<tr><td class="uf">${uf.toUpperCase()}<small>${UFS[uf]}</small></td>
+      <td>${r ? fmtP(pst,1) : "–"}<span class="mini"><i style="width:${pst*100}%"></i></span></td>
+      <td class="c1">${s ? fmtP(v1/s,1) : "–"}</td><td class="c2">${s ? fmtP(v2/s,1) : "–"}</td>
+      <td>${prior}</td><td>${m && m.R >= 1 ? fmtN(m.R) : m ? "0" : "–"}</td><td>${saldo}</td></tr>`;
+  }
+  $("tbUF").innerHTML = html;
+  setTxt("ufCob", `${Object.keys(S.uf).length} de 28 arquivos do 2º turno · ${Object.keys(S.uf1).length} de 28 do 1º turno`);
+}
+
+function sparkline(pts){
+  if (!pts || pts.length < 2) return `<span class="muted">${pts && pts.length ? "1 ponto" : "–"}</span>`;
+  const W = 120, H = 26;
+  const ys = pts.map(p => p[1]), lo = Math.min(...ys), hi = Math.max(...ys), amp = Math.max(hi - lo, 0.01);
+  const x = v => 2 + v*(W - 4), y = v => H - 3 - (v - lo)/amp*(H - 6);
+  const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  const u = pts[pts.length - 1];
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="${x(u[0])}" cy="${y(u[1])}" r="2.6" fill="currentColor"/></svg>`;
+}
+
+function renderAbstencao(){
+  if (!comEstados()) { $("tbAbst").innerHTML = `<tr><td colspan="7" class="muted">Consulta por estado desligada (Configuração).</td></tr>`; setTxt("abstResumo", ""); return; }
+  const linhas = SIGLAS.map(uf => {
+    const r = S.uf[uf], p = S.uf1[uf];
+    const a2 = r && r.st && r.esi ? r.a/r.esi : NaN, a1 = p && p.esi ? p.a/p.esi : NaN;
+    return {uf, r, a1, a2, d: a2 - a1, pst: r && r.ts ? r.st/r.ts : 0};
+  }).sort((a, b) => (Number.isFinite(b.d) ? b.d : -9) - (Number.isFinite(a.d) ? a.d : -9));
+  const maxAbs = Math.max(0.02, ...linhas.filter(l => Number.isFinite(l.d)).map(l => Math.abs(l.d)));
+  let html = "", subiu = 0, caiu = 0;
+  for (const l of linhas) {
+    let barra = "", seta = "";
+    if (Number.isFinite(l.d)) {
+      const larg = Math.abs(l.d)/maxAbs*50;
+      barra = `<span class="diverge"><i style="${l.d >= 0 ? "left:50%" : `left:${50 - larg}%`};width:${larg}%;background:var(${l.d >= 0 ? "--up" : "--down"})"></i></span>`;
+      if (l.d > 0.002) { seta = `<span class="seta up">▲ aumentou</span>`; subiu++; }
+      else if (l.d < -0.002) { seta = `<span class="seta down">▼ diminuiu</span>`; caiu++; }
+      else seta = `<span class="muted">estável</span>`;
+    }
+    const tendCor = Number.isFinite(l.d) ? (l.d >= 0 ? "var(--up)" : "var(--down)") : "var(--muted)";
+    html += `<tr><td class="uf">${l.uf.toUpperCase()}<small>${UFS[l.uf]}</small></td>
+      <td>${l.r ? fmtP(l.pst,1) : "–"}</td><td>${fmtP(l.a1,1)}</td><td>${fmtP(l.a2,1)}</td>
+      <td>${fmtPP(l.d)} ${barra}</td><td>${seta}</td><td style="color:${tendCor}">${sparkline(S.histUF[l.uf])}</td></tr>`;
+  }
+  const s2 = somarUF(S.uf), s1 = somarUF(S.uf1);
+  const A2 = s2.esi ? s2.a/s2.esi : NaN, A1 = s1.esi ? s1.a/s1.esi : NaN;
+  html += `<tr class="tot"><td>Brasil (soma)</td><td>${s2.ts ? fmtP(s2.st/s2.ts,1) : "–"}</td><td>${fmtP(A1,1)}</td><td>${fmtP(A2,1)}</td><td>${fmtPP(A2 - A1)}</td><td></td><td></td></tr>`;
+  $("tbAbst").innerHTML = html;
+  setTxt("abstResumo", Number.isFinite(A2 - A1) ? `Aumentou em ${subiu} estados, diminuiu em ${caiu} · Brasil ${fmtPP(A2 - A1)}` : "Aguardando seções apuradas");
 }
 
 function desenhar(svg, pts, yMin, yMax, linhaRef){
@@ -337,89 +672,68 @@ function desenhar(svg, pts, yMin, yMax, linhaRef){
     s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${cor("--line")}"/>`;
     s += `<text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="${cor("--muted")}">${(v*100).toFixed(yMax - yMin < 0.3 ? 1 : 0).replace(".", ",")}%</text>`;
   }
-  for (let i = 0; i <= 5; i++) {
-    const v = i/5;
-    s += `<text x="${x(v)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="${cor("--muted")}">${i*20}%</text>`;
-  }
+  for (let i = 0; i <= 5; i++) s += `<text x="${x(i/5)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="${cor("--muted")}">${i*20}%</text>`;
   s += `<text x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle" font-size="11" fill="${cor("--muted")}">seções totalizadas</text>`;
   if (linhaRef !== undefined) s += `<line x1="${L}" x2="${W-R}" y1="${y(linhaRef)}" y2="${y(linhaRef)}" stroke="${cor("--fg")}" stroke-dasharray="4 4" opacity=".5"/>`;
   if (!pts.length) s += `<text x="${(L+W-R)/2}" y="${H/2}" text-anchor="middle" font-size="13" fill="${cor("--muted")}">Os pontos aparecem a cada nova totalização do TSE</text>`;
   [[1, "--c1"], [2, "--c2"]].forEach(([idx, c]) => {
     if (!pts.length) return;
-    const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(Math.min(yMax, Math.max(yMin, p[idx]))).toFixed(1)}`).join("");
+    const lim = v => Math.min(yMax, Math.max(yMin, v));
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(lim(p[idx])).toFixed(1)}`).join("");
     s += `<path d="${d}" fill="none" stroke="${cor(c)}" stroke-width="2.5" stroke-linejoin="round"/>`;
     const u = pts[pts.length-1];
-    s += `<circle cx="${x(u[0])}" cy="${y(Math.min(yMax, Math.max(yMin, u[idx])))}" r="4.5" fill="${cor(c)}"/>`;
+    s += `<circle cx="${x(u[0])}" cy="${y(lim(u[idx]))}" r="4.5" fill="${cor(c)}"/>`;
   });
   svg.innerHTML = s;
 }
 
-/* ---------- ciclo ---------- */
-let timer, contador, restante = 0, ultimo = null;
-function status(txt, cls){ setTxt("liveTxt", txt); $("live").className = "live " + (cls || ""); }
-function aviso(txt, cls){ const b = $("banner"); b.hidden = !txt; b.textContent = txt || ""; b.className = "banner " + (cls || ""); }
-
-async function ciclo(){
-  clearTimeout(timer);
-  const url = $("url").value.trim();
-  try {
-    const j = await buscar(url);
-    const r = parseTSE(j);
-    const k = calcular(r, Number($("sigma").value));
-    if (r.dv === "n") aviso("O TSE ainda não liberou a divulgação dos votos (começa às 17h de Brasília). O painel continua tentando.", "info");
-    else if (r.f === "s") aviso("Atenção: este arquivo é do ambiente SIMULADO do TSE (f = s), não é resultado real.", "info");
-    else aviso("");
-    if (r.dv !== "n") registrar(r, k);
-    ultimo = r;
-    render(r, k);
-    status("Ao vivo · " + new Date().toLocaleTimeString("pt-BR"), "on");
-    setTxt("modo", modo);
-  } catch (e) {
-    status("Sem conexão", "err");
-    aviso(`Não consegui ler o arquivo do TSE: ${e.message}. Antes das 17h do dia 25/10 o arquivo do 2º turno pode ainda não existir. ` +
-          (location.protocol === "file:" ? "Abra o painel pelo iniciador (iniciar-windows.bat ou iniciar-mac-linux.sh) para usar o servidor local." :
-           "Confira a URL em Configuração; para testar agora escolha o 1º turno."), "err");
-  }
-  restante = Number($("intervalo").value);
-  timer = setTimeout(ciclo, restante*1000);
-}
-setInterval(() => { restante = Math.max(0, restante - 1); setTxt("cont", restante); }, 1000);
-
+/* ---------- configuração e botões ---------- */
+function salvarCfg(){ store.set("apuracao:cfg", {preset:$("preset").value, url:$("url").value, intervalo:$("intervalo").value, sigma:$("sigma").value, estados:$("estados").value, fonte:$("fonte").value}); }
 function aplicarPreset(){
-  const url = montarUrl($("preset").value, $("uf").value);
-  if (url) $("url").value = url;
+  if ($("preset").value !== "custom") $("url").value = montarUrl($("preset").value);
   $("url").readOnly = $("preset").value !== "custom";
-  $("uf").disabled = $("preset").value !== "g2";
 }
 function reiniciar(){
   salvarCfg();
-  historico = lerHist();
+  S.nac = null; S.uf = {}; S.uf1 = {}; S.ultimoId = "";
+  S.hist = store.get(chave("hist"), []);
+  S.histUF = store.get(chave("histuf"), {});
+  if (S.hist.length) S.ultimoId = S.hist[S.hist.length - 1].id;
   ciclo();
 }
+function baixarCsv(nome, cab, linhas){
+  const txt = "﻿" + [cab.join(";"), ...linhas.map(l => l.map(v => typeof v === "number" ? String(v).replace(".", ",") : (v ?? "")).join(";"))].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt], {type:"text/csv"})); a.download = nome; a.click();
+}
 
-$("uf").innerHTML = UFS.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join("");
-const cfg = lerCfg();
-for (const id of ["preset", "uf", "intervalo", "sigma"]) if (cfg[id]) $(id).value = cfg[id];
+const cfg = store.get("apuracao:cfg", {});
+for (const id of ["preset", "intervalo", "sigma", "estados", "fonte"]) if (cfg[id] && [...$(id).options].some(o => o.value === cfg[id])) $(id).value = cfg[id];
 if (cfg.preset === "custom" && cfg.url) $("url").value = cfg.url;
 aplicarPreset();
-["preset", "uf"].forEach(id => $(id).addEventListener("change", () => { aplicarPreset(); reiniciar(); }));
-["intervalo", "sigma"].forEach(id => $(id).addEventListener("change", reiniciar));
+$("preset").addEventListener("change", () => { aplicarPreset(); reiniciar(); });
+["intervalo", "estados"].forEach(id => $(id).addEventListener("change", reiniciar));
+["sigma", "fonte"].forEach(id => $(id).addEventListener("change", () => { salvarCfg(); if (S.nac || Object.keys(S.uf).length) renderTudo(); }));
 $("url").addEventListener("change", reiniciar);
 $("btnAgora").addEventListener("click", ciclo);
 $("btnLimpar").addEventListener("click", () => {
   const b = $("btnLimpar");
-  if (b.dataset.armado) { historico = []; try { localStorage.removeItem(chaveHist()); } catch {} delete b.dataset.armado; b.textContent = "Limpar histórico"; setTxt("limparMsg", "Histórico apagado."); if (ultimo) render(ultimo, calcular(ultimo, Number($("sigma").value))); }
-  else { b.dataset.armado = "1"; b.textContent = "Confirmar: apagar histórico"; setTxt("limparMsg", ""); }
+  if (b.dataset.armado) {
+    S.hist = []; S.histUF = {}; S.ultimoId = ""; store.del(chave("hist")); store.del(chave("histuf"));
+    delete b.dataset.armado; b.textContent = "Limpar histórico"; setTxt("limparMsg", "Histórico apagado.");
+    if (S.nac || Object.keys(S.uf).length) renderTudo();
+  } else { b.dataset.armado = "1"; b.textContent = "Confirmar: apagar histórico"; setTxt("limparMsg", ""); }
 });
-$("btnCsv").addEventListener("click", () => {
-  const cab = "totalizacao;pct_secoes;votos_cand1;votos_cand2;pct_validos_cand1;validos_restantes;prob_cand1;secoes;secoes_tot;eleitorado;eleit_tot;comparecimento;votos_validos";
-  const linhas = historico.map(h => [h.id, h.pst, h.v1, h.v2, h.sh1, Math.round(h.rest), h.p1, h.ts, h.st, h.te, h.est, h.c, h.vv]
-                   .map(v => typeof v === "number" ? String(v).replace(".", ",") : v).join(";"));
-  const blob = new Blob(["﻿" + [cab, ...linhas].join("\r\n")], {type:"text/csv"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = "historico_apuracao.csv"; a.click();
+$("btnCsv").addEventListener("click", () => baixarCsv("historico_apuracao.csv",
+  ["hora_consulta","totalizacao_tse","pct_secoes","votos_" + S.nums[0],"votos_" + S.nums[1],"pct_validos_" + S.nums[0],"prob_" + S.nums[0],"abstencao"],
+  S.hist.map(h => [h.hora, h.tse, h.pst, h.v1, h.v2, h.sh1, h.p1, h.abst])));
+$("btnCsvUF").addEventListener("click", () => {
+  const [n1, n2] = S.nums;
+  baixarCsv("estados_apuracao.csv",
+    ["uf","estado","secoes","secoes_totalizadas","votos_" + n1,"votos_" + n2,"abstencao_2t","abstencao_1t","totalizacao"],
+    SIGLAS.map(uf => { const r = S.uf[uf], p = S.uf1[uf];
+      return [uf.toUpperCase(), UFS[uf], r?.ts, r?.st, votosDe(r, n1), votosDe(r, n2), r && r.esi ? r.a/r.esi : null, p && p.esi ? p.a/p.esi : null, r ? `${r.dt} ${r.ht}` : ""]; }));
 });
-if (!$("url").value) $("cfgBox").open = true;
 reiniciar();
 </script>
 </body>
