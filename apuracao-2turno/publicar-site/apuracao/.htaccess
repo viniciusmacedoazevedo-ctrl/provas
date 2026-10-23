@@ -1,6 +1,11 @@
 # Painel de apuração: página inicial e sem cache da página (os dados já vêm sempre novos)
 DirectoryIndex index.html
 Options -Indexes
+# Liga o mod_rewrite aqui sem regras: assim redirecionamentos do .htaccess do site principal
+# (public_html) não se aplicam ao painel
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+</IfModule>
 <IfModule mod_headers.c>
   <FilesMatch "\.html$">
     Header set Cache-Control "no-cache"
