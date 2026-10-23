@@ -101,6 +101,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 #mapa .uf-p{stroke:var(--surface);stroke-width:1;cursor:pointer;transition:fill .4s}
 #mapa .uf-p:hover,#mapa .uf-p:focus-visible{stroke:var(--fg);stroke-width:1.6;outline:none}
 #mapa .uf-p.sel{stroke:var(--fg);stroke-width:2.6}
+#mapa .uf-p:focus{outline:none}
+.soma-lista{font:600 .9rem var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.dica{font-size:.8rem;color:var(--muted)}
 #mapa text{font:600 11px var(--f-body);fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:3px;pointer-events:none}
 #mapa text.peq{font-size:9.5px}
 #mapa line{stroke:var(--muted);stroke-width:.8}
@@ -201,11 +204,15 @@ tr.sel td{background:var(--soft)}
         <button type="button" id="modoLider" aria-pressed="true">Quem lidera</button>
         <button type="button" id="modoAbst" aria-pressed="false">Abstenção</button>
       </div>
+      <div class="seg" role="group" aria-label="Seleção">
+        <button type="button" id="btnSomar" aria-pressed="false" title="Ligado: cada clique adiciona ou tira o estado da soma">Somar estados</button>
+      </div>
     </div>
     <div class="mapa-grid">
       <div>
         <svg id="mapa" role="group" aria-label="Mapa do Brasil: clique em um estado para ver os números"></svg>
         <div class="leg" id="legMapa"></div>
+        <p class="dica">Para somar estados: segure <b>Ctrl</b> (<b>⌘</b> no Mac) e clique nos estados, ou ligue "Somar estados" e toque neles. Clique sem Ctrl volta a um estado só.</p>
       </div>
       <div class="det" id="detalhe" aria-live="polite"></div>
     </div>
@@ -598,7 +605,7 @@ function renderTudo(){
   [[n1, d.v1, p1, mod && mod.F1, "1"], [n2, d.v2, 1 - p1, mod && mod.F2, "2"]].forEach(([n, v, p, f, i]) => {
     const [nome, partido] = S.nomes[n] || [String(n), ""];
     setTxt(`k${i}nome`, nome); setTxt(`k${i}num`, `${n} · ${partido}`);
-    for (const id of [`lg${i}a`, `lg${i}b`, `hc${i}`, `hu${i}`]) setTxt(id, nome.split(" ")[0] === "FLÁVIO" ? "Flávio" : nome.charAt(0) + nome.slice(1).toLowerCase().split(" ")[0]);
+    for (const id of [`hc${i}`, `hu${i}`]) setTxt(id, nomeCurto(n));
     setTxt(`lg${i}a`, nome); setTxt(`lg${i}b`, nome);
     setTxt(`k${i}pct`, soma ? fmtP(v/soma) : "–");
     setTxt(`k${i}vot`, fmtN(v) + " votos");
@@ -697,7 +704,7 @@ function renderEstados(mod){
     const pst = r && r.ts ? r.st/r.ts : 0;
     const prior = m && m.prior != null ? `<span class="c1">${fmtP(m.prior,1)}</span> × <span class="c2">${fmtP(1 - m.prior,1)}</span>` : "–";
     const saldo = m && m.R < 1 && s ? `<span class="muted">apurado</span>` : m && s ? `<span class="${m.saldo >= 0 ? "c1" : "c2"}">+${fmtN(Math.abs(m.saldo))} ${m.saldo >= 0 ? (S.nomes[n1]||[""])[0].split(" ")[0] : (S.nomes[n2]||[""])[0].split(" ")[0]}</span>` : (m ? `<span class="muted">${m.saldo >= 0 ? "+" : "−"}${fmtN(Math.abs(m.saldo))} (1º turno)</span>` : "–");
-    html += `<tr data-uf="${uf}" class="${S.sel === uf ? "sel" : ""}" style="cursor:pointer"><td class="uf">${uf.toUpperCase()}<small>${UFS[uf]}</small></td>
+    html += `<tr data-uf="${uf}" class="${estaSel(uf) ? "sel" : ""}" style="cursor:pointer"><td class="uf">${uf.toUpperCase()}<small>${UFS[uf]}</small></td>
       <td>${r ? fmtP(pst,1) : "–"}<span class="mini"><i style="width:${pst*100}%"></i></span></td>
       <td class="c1">${s ? fmtP(v1/s,1) : "–"}</td><td class="c2">${s ? fmtP(v2/s,1) : "–"}</td>
       <td>${prior}</td><td>${m && m.R >= 1 ? fmtN(m.R) : m ? "0" : "–"}</td><td>${saldo}</td></tr>`;
@@ -735,7 +742,7 @@ function renderAbstencao(){
       else seta = `<span class="muted">estável</span>`;
     }
     const tendCor = Number.isFinite(l.d) ? (l.d >= 0 ? "var(--up)" : "var(--down)") : "var(--muted)";
-    html += `<tr data-uf="${l.uf}" class="${S.sel === l.uf ? "sel" : ""}" style="cursor:pointer"><td class="uf">${l.uf.toUpperCase()}<small>${UFS[l.uf]}</small></td>
+    html += `<tr data-uf="${l.uf}" class="${estaSel(l.uf) ? "sel" : ""}" style="cursor:pointer"><td class="uf">${l.uf.toUpperCase()}<small>${UFS[l.uf]}</small></td>
       <td>${l.r ? fmtP(l.pst,1) : "–"}</td><td>${fmtP(l.a1,1)}</td><td>${fmtP(l.a2,1)}</td>
       <td>${fmtPP(l.d)} ${barra}</td><td>${seta}</td><td style="color:${tendCor}">${sparkline(S.histUF[l.uf])}</td></tr>`;
   }
@@ -775,6 +782,9 @@ function desenhar(svg, pts, yMin, yMax, linhaRef){
 /* ---------- mapa interativo e detalhe do estado ---------- */
 let ultimoModelo = null, modoMapa = "lider";
 S.sel = store.get("apuracao:sel", "br");
+S.soma = store.get("apuracao:soma", []); // estados somados (2 ou mais)
+let modoSoma = false;
+const estaSel = uf => S.soma.length ? S.soma.includes(uf) : S.sel === uf;
 // estados pequenos: rótulo fora, ligado por uma linha (deslocamento em unidades do mapa)
 const ROTULO_FORA = {rn:[46,-8], pb:[52,2], pe:[58,10], al:[46,14], se:[40,22], es:[38,10], rj:[36,22], df:[0,0]};
 
@@ -787,7 +797,8 @@ function dadosUF(uf){
   return {r, p, v1, v2, s, sh: s ? v1/s : NaN, prior: p1 + p2 ? p1/(p1 + p2) : NaN,
           pst: r && r.ts ? r.st/r.ts : 0, a1, a2, d: a2 - a1, m: ultimoModelo && ultimoModelo.porUF ? ultimoModelo.porUF[uf] : null};
 }
-const nomeCurto = n => { const nm = (S.nomes[n] || [String(n)])[0]; return nm === "FLÁVIO BOLSONARO" ? "Flávio" : nm.charAt(0) + nm.slice(1).toLowerCase().split(" ")[0]; };
+const semAcento = t => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const nomeCurto = n => { const nm = (S.nomes[n] || [String(n)])[0]; return semAcento(nm) === "FLAVIO BOLSONARO" ? "Flávio" : nm.charAt(0) + nm.slice(1).toLowerCase().split(" ")[0]; };
 
 // cor de quem lidera: vermelho (Lula) ou azul (Flávio), mais forte quanto maior a vantagem
 function corLider(x){
@@ -820,15 +831,15 @@ function montarMapa(){
   html += `<rect class="uf-p" data-uf="zz" x="${MAPA.w - 40}" y="${MAPA.h - 50}" width="44" height="30" rx="4" tabindex="0" role="button" aria-label="Exterior"><title>Exterior</title></rect>
            <text class="peq" x="${MAPA.w - 18}" y="${MAPA.h - 31}" text-anchor="middle">EXT</text>`;
   svg.innerHTML = html;
-  svg.addEventListener("click", e => { const el = e.target.closest("[data-uf]"); if (el) selecionar(el.dataset.uf); });
-  svg.addEventListener("keydown", e => { const el = e.target.closest("[data-uf]"); if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selecionar(el.dataset.uf); } });
+  svg.addEventListener("click", e => { const el = e.target.closest("[data-uf]"); if (el) selecionar(el.dataset.uf, e.ctrlKey || e.metaKey); });
+  svg.addEventListener("keydown", e => { const el = e.target.closest("[data-uf]"); if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selecionar(el.dataset.uf, e.ctrlKey || e.metaKey); } });
 }
 
 function renderMapa(){
   for (const el of $("mapa").querySelectorAll(".uf-p")) {
     const x = dadosUF(el.dataset.uf);
     el.style.fill = modoMapa === "lider" ? corLider(x) : corAbst(x);
-    el.classList.toggle("sel", S.sel === el.dataset.uf);
+    el.classList.toggle("sel", estaSel(el.dataset.uf));
   }
   const [n1, n2] = S.nums;
   $("legMapa").innerHTML = modoMapa === "lider"
@@ -855,8 +866,24 @@ function miniLinha(pts){ // fatia de Lula no estado ao longo da apuração
 function renderDetalhe(){
   const [n1, n2] = S.nums;
   const uf = S.sel;
-  let x, nome;
-  if (uf === "br" || !UFS[uf]) {
+  let x, nome, sub = "";
+  if (S.soma.length >= 2) {
+    // soma dos estados selecionados: soma as quantidades e recalcula os percentuais
+    const t = {v1:0, v2:0, ts:0, st:0, esi:0, a:0, p1:0, p2:0, esi1:0, a1:0, R:0, saldo:0, temM:false};
+    for (const u of S.soma) {
+      const r = S.uf[u], p = S.uf1[u], m = ultimoModelo && ultimoModelo.porUF ? ultimoModelo.porUF[u] : null;
+      t.v1 += votosDe(r, n1); t.v2 += votosDe(r, n2);
+      if (r) { t.ts += r.ts || 0; t.st += r.st || 0; if (r.st) { t.esi += r.esi || 0; t.a += r.a || 0; } }
+      if (p) { t.p1 += votosDe(p, n1); t.p2 += votosDe(p, n2); t.esi1 += p.esi || 0; t.a1 += p.a || 0; }
+      if (m) { t.R += m.R; t.saldo += m.saldo; t.temM = true; }
+    }
+    x = {v1:t.v1, v2:t.v2, s:t.v1 + t.v2, pst: t.ts ? t.st/t.ts : 0,
+         a2: t.esi ? t.a/t.esi : NaN, a1: t.esi1 ? t.a1/t.esi1 : NaN,
+         prior: t.p1 + t.p2 ? t.p1/(t.p1 + t.p2) : NaN, m: t.temM ? {R:t.R, saldo:t.saldo} : null};
+    x.sh = x.s ? x.v1/x.s : NaN; x.d = x.a2 - x.a1;
+    nome = `Soma de ${S.soma.length} estados`;
+    sub = S.soma.map(u => u === "zz" ? "EXT" : u.toUpperCase()).join(" + ");
+  } else if (uf === "br" || !UFS[uf]) {
     const F = fonteAtual(), d = F.dados || {};
     const s1 = somarUF(S.uf1);
     x = {v1:d.v1||0, v2:d.v2||0, s:(d.v1||0) + (d.v2||0), pst: d.ts ? d.st/d.ts : 0,
@@ -869,10 +896,13 @@ function renderDetalhe(){
   const lider = x.s ? (x.v1 >= x.v2 ? n1 : n2) : null;
   const barra = (v, s, cor) => `<span class="mbar"><i style="width:${s ? v/s*100 : 0}%;background:var(${cor})"></i></span>`;
   const saldoTxt = x.m && x.m.R >= 1 ? `${fmtN(Math.abs(x.m.saldo))} p/ ${esc(nomeCurto(x.m.saldo >= 0 ? n1 : n2))}` : x.m ? "apurado" : "–";
-  const opcoes = `<option value="br">Brasil</option>` + SIGLAS.map(u => `<option value="${u}" ${u === uf ? "selected" : ""}>${u.toUpperCase()} · ${UFS[u]}</option>`).join("");
+  const somando = S.soma.length >= 2;
+  const opcoes = (somando ? `<option value="soma" selected>Soma: ${esc(sub)}</option>` : "") + `<option value="br">Brasil</option>` +
+    SIGLAS.map(u => `<option value="${u}" ${!somando && u === uf ? "selected" : ""}>${u.toUpperCase()} · ${UFS[u]}</option>`).join("");
   $("detalhe").innerHTML = `
     <div class="panel-head"><h3>${esc(nome)}</h3>
       <select id="selUF" aria-label="Escolher estado">${opcoes}</select></div>
+    ${somando ? `<div class="soma-lista">${esc(sub)} <button type="button" class="sec" id="btnLimparSoma" style="margin-left:8px;padding:4px 10px;font-size:.8rem">Limpar soma</button></div>` : ""}
     <div><span class="lbl">Seções apuradas</span> <b style="font-family:var(--f-mono)">${fmtP(x.pst,1)}</b><div class="meter"><i style="width:${x.pst*100}%"></i></div></div>
     <div class="linha"><span class="c1">${esc(nomeCurto(n1))}</span>${barra(x.v1, x.s, "--c1")}<span class="c1">${x.s ? fmtP(x.sh) : "–"}</span></div>
     <div class="linha"><span class="c2">${esc(nomeCurto(n2))}</span>${barra(x.v2, x.s, "--c2")}<span class="c2">${x.s ? fmtP(1 - x.sh) : "–"}</span></div>
@@ -886,16 +916,32 @@ function renderDetalhe(){
       <div><span class="lbl">Abstenção 1º → 2º turno</span><b>${fmtP(x.a1,1)} → ${fmtP(x.a2,1)}</b></div>
       <div><span class="lbl">Variação</span><b style="color:var(${x.d >= 0 ? "--up" : "--down"})">${Number.isFinite(x.d) ? (x.d >= 0 ? "▲ " : "▼ ") + fmtPP(x.d) : "–"}</b></div>
     </div>
-    ${uf !== "br" && UFS[uf] ? miniLinha(S.histUF[uf]) : ""}`;
-  $("selUF").addEventListener("change", e => selecionar(e.target.value));
+    ${!somando && uf !== "br" && UFS[uf] ? miniLinha(S.histUF[uf]) : ""}`;
+  $("selUF").addEventListener("change", e => { if (e.target.value !== "soma") { S.soma = []; S.sel = "br"; selecionar(e.target.value); } });
+  if (somando) $("btnLimparSoma").addEventListener("click", () => { S.soma = []; S.sel = "br"; aplicarSelecao(); });
 }
 
-function selecionar(uf){
-  S.sel = S.sel === uf ? "br" : uf; // clicar de novo no mesmo estado volta para o Brasil
-  store.set("apuracao:sel", S.sel);
+// somar = Ctrl/⌘ pressionado ou botão "Somar estados" ligado: adiciona ou tira o estado da soma
+function selecionar(uf, somar){
+  if ((somar || modoSoma) && uf !== "br") {
+    const lista = S.soma.length ? S.soma.slice() : (S.sel !== "br" ? [S.sel] : []);
+    const i = lista.indexOf(uf);
+    if (i >= 0) lista.splice(i, 1); else lista.push(uf);
+    S.soma = lista.length >= 2 ? lista : [];
+    S.sel = lista.length === 1 ? lista[0] : "br";
+  } else {
+    const mesmo = !S.soma.length && S.sel === uf;
+    S.soma = [];
+    S.sel = mesmo ? "br" : uf; // clicar de novo no mesmo estado volta para o Brasil
+  }
+  aplicarSelecao();
+}
+function aplicarSelecao(){
+  store.set("apuracao:sel", S.sel); store.set("apuracao:soma", S.soma);
   renderMapa(); renderDetalhe();
-  for (const tr of document.querySelectorAll("tr[data-uf], .tg[data-uf]")) tr.classList.toggle("sel", tr.dataset.uf === S.sel);
-  for (const g of document.querySelectorAll("#chAbst .barra")) g.style.opacity = S.sel === "br" || g.dataset.uf === S.sel ? 1 : .45;
+  const nada = !S.soma.length && S.sel === "br";
+  for (const tr of document.querySelectorAll("tr[data-uf], .tg[data-uf]")) tr.classList.toggle("sel", estaSel(tr.dataset.uf));
+  for (const g of document.querySelectorAll("#chAbst .barra")) g.style.opacity = nada || estaSel(g.dataset.uf) ? 1 : .45;
 }
 
 /* ---------- 1º × 2º turno por estado (barras empilhadas) ---------- */
@@ -917,7 +963,7 @@ function renderTurnos(){
     .sort((x, y) => y.te - x.te).map(x => x.u).concat(["zz"]);
   const bloco = (uf, nome, r1, r2, extra) => {
     const pst = r2 && r2.ts ? r2.st/r2.ts : 0;
-    return `<div class="tg${extra}${S.sel === uf ? " sel" : ""}" data-uf="${uf}" role="button" tabindex="0" aria-label="${esc(nome)}: 1º e 2º turno">
+    return `<div class="tg${extra}${estaSel(uf) ? " sel" : ""}" data-uf="${uf}" role="button" tabindex="0" aria-label="${esc(nome)}: 1º e 2º turno">
       <span class="tl"><b>${esc(nome)}</b>1º turno</span>${barraTurno(r1.a, r1.b, r1.v, "sem dados do 1º turno")}<span class="tr">final</span>
       <span class="tl"><b>${esc(nome)}</b>2º turno</span>${barraTurno(r2.a, r2.b, r2.a + r2.b, "aguardando apuração")}<span class="tr">${r2.ts ? fmtP(pst, 1).replace(",0%", "%") + " apur." : "–"}</span></div>`;
   };
@@ -926,7 +972,7 @@ function renderTurnos(){
   for (const uf of ordem) html += bloco(uf, uf === "zz" ? "Ext." : uf.toUpperCase(), um(S.uf1[uf]), um(S.uf[uf]), "");
   $("turnos").innerHTML = html;
 }
-$("turnos").addEventListener("keydown", e => { const g = e.target.closest(".tg"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selecionar(g.dataset.uf); } });
+$("turnos").addEventListener("keydown", e => { const g = e.target.closest(".tg"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selecionar(g.dataset.uf, e.ctrlKey || e.metaKey); } });
 
 /* ---------- abstenção: uma barra por estado ---------- */
 function graficoAbstencao(){
@@ -949,20 +995,21 @@ function graficoAbstencao(){
   s += `<text x="${L-6}" y="12" font-size="10" text-anchor="end" fill="${cor("--muted")}">p.p.</text>`;
   lista.forEach((i, k) => {
     const cx = L + passo*k + passo/2;
-    s += `<g class="barra" data-uf="${i.uf}" style="opacity:${S.sel === "br" || S.sel === i.uf ? 1 : .45}"><title>${UFS[i.uf]}: ${Number.isFinite(i.d) ? fmtP(i.a1,1) + " → " + fmtP(i.a2,1) + " (" + fmtPP(i.d) + ")" : "sem dados"}</title>`;
+    s += `<g class="barra" data-uf="${i.uf}" style="opacity:${(!S.soma.length && S.sel === "br") || estaSel(i.uf) ? 1 : .45}"><title>${UFS[i.uf]}: ${Number.isFinite(i.d) ? fmtP(i.a1,1) + " → " + fmtP(i.a2,1) + " (" + fmtPP(i.d) + ")" : "sem dados"}</title>`;
     s += `<rect x="${cx - passo/2}" y="${T}" width="${passo}" height="${H - T - B}" fill="transparent"/>`;
     if (Number.isFinite(i.d)) {
       const y0 = y(0), y1 = y(i.d);
       s += `<rect x="${cx - larg/2}" y="${Math.min(y0, y1)}" width="${larg}" height="${Math.max(1, Math.abs(y1 - y0))}" rx="2" fill="${cor(i.d >= 0 ? "--up" : "--down")}"/>`;
       s += `<text x="${cx}" y="${i.d >= 0 ? y1 - 4 : y1 + 11}" font-size="9" text-anchor="middle" fill="${cor("--fg")}">${(i.d >= 0 ? "+" : "−") + Math.abs(i.d*100).toFixed(1).replace(".", ",")}</text>`;
     } else s += `<text x="${cx}" y="${y(0) - 4}" font-size="9" text-anchor="middle" fill="${cor("--muted")}">–</text>`;
-    s += `<text x="${cx}" y="${H - B + 16}" font-size="11" font-weight="600" text-anchor="middle" fill="${cor(S.sel === i.uf ? "--fg" : "--muted")}">${i.uf === "zz" ? "EXT" : i.uf.toUpperCase()}</text></g>`;
+    s += `<text x="${cx}" y="${H - B + 16}" font-size="11" font-weight="600" text-anchor="middle" fill="${cor(estaSel(i.uf) ? "--fg" : "--muted")}">${i.uf === "zz" ? "EXT" : i.uf.toUpperCase()}</text></g>`;
   });
   if (!comDado.length) s += `<text x="${W/2}" y="${H/2 - 20}" font-size="13" text-anchor="middle" fill="${cor("--muted")}">As barras aparecem quando os estados começarem a apurar</text>`;
   svg.innerHTML = s;
 }
-$("chAbst").addEventListener("click", e => { const g = e.target.closest(".barra"); if (g) selecionar(g.dataset.uf); });
-document.addEventListener("click", e => { const tr = e.target.closest("tr[data-uf], .tg[data-uf]"); if (tr) selecionar(tr.dataset.uf); });
+$("chAbst").addEventListener("click", e => { const g = e.target.closest(".barra"); if (g) selecionar(g.dataset.uf, e.ctrlKey || e.metaKey); });
+document.addEventListener("click", e => { const tr = e.target.closest("tr[data-uf], .tg[data-uf]"); if (tr) selecionar(tr.dataset.uf, e.ctrlKey || e.metaKey); });
+$("btnSomar").addEventListener("click", () => { modoSoma = !modoSoma; $("btnSomar").setAttribute("aria-pressed", modoSoma); });
 for (const [id, m] of [["modoLider", "lider"], ["modoAbst", "abst"]])
   $(id).addEventListener("click", () => { modoMapa = m; $("modoLider").setAttribute("aria-pressed", m === "lider"); $("modoAbst").setAttribute("aria-pressed", m === "abst"); renderMapa(); });
 montarMapa(); renderMapa(); renderDetalhe(); graficoAbstencao(); renderTurnos();
