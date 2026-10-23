@@ -1,0 +1,8 @@
+# Cópias temporárias dos arquivos do TSE: só o tse.php lê esta pasta
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

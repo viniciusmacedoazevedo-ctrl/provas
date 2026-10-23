@@ -365,18 +365,25 @@ function escolherDois(cands){
 const votosDe = (r, n) => (r && r.cands.find(c => c.n === n) || {vap:0}).vap;
 
 /* ---------- busca: servidor local (proxy) primeiro, depois direto no TSE ---------- */
-let modo = "";
+let modo = "", repasseOk = null;
 async function buscar(url){
   const tentativas = [];
-  if (location.protocol.startsWith("http")) tentativas.push(["servidor local", "/tse?u=" + encodeURIComponent(url)]);
+  // repasse: tse.php quando publicado num site com PHP; /tse no computador (iniciador).
+  // o que funcionar primeiro fica guardado para as próximas consultas
+  if (location.protocol.startsWith("http")) {
+    const rotas = repasseOk ? [repasseOk] : ["tse.php?u=", "/tse?u="];
+    for (const r of rotas) tentativas.push(["servidor local", r + encodeURIComponent(url), r]);
+  }
   tentativas.push(["direto no TSE", url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()]);
   let erro;
-  for (const [nome, u] of tentativas) {
+  for (const [nome, u, rota] of tentativas) {
     let resp;
     try { resp = await fetch(u, {cache:"no-store"}); }
     catch (e) { erro = new Error(nome === "direto no TSE" ? "o navegador bloqueou o acesso direto ao TSE (use o iniciador do painel)" : e.message); continue; }
-    if (resp.ok) { modo = nome; return parseTSE(await resp.json()); }
-    if (nome === "servidor local" && !resp.headers.get("x-proxy-tse")) continue;
+    const ehRepasse = nome === "servidor local" && resp.headers.get("x-proxy-tse");
+    if (ehRepasse) repasseOk = rota;
+    if (resp.ok && (ehRepasse || nome !== "servidor local")) { modo = rota === "tse.php?u=" ? "servidor do site" : nome; return parseTSE(await resp.json()); }
+    if (nome === "servidor local" && !ehRepasse) continue;
     throw new Error((await resp.text()) || `HTTP ${resp.status}`);
   }
   throw erro;

@@ -1,0 +1,4 @@
+apuracao/index.html
+apuracao/cache/*.json
+apuracao/cache/*.lock
+apuracao/cache/*.tmp
