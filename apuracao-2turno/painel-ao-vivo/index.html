@@ -20,6 +20,7 @@
   --bg:#0f1513; --surface:#18211d; --fg:#e8efeb; --muted:#93a39c; --line:#2b3732; --soft:#202a26;
   --c1:#ff5a6e; --c2:#5b9cff; --outros:#46525c; --on-c:#0f1513; --ok:#4cc27e; --warn:#f0a43a; --bad:#ff6b5e; --up:#f0a43a; --down:#4cc27e; color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 var(--f-body)}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
@@ -290,7 +291,15 @@ tr.sel td{background:var(--soft)}
 
   <details id="cfgBox">
     <summary>Configuração e teste da conexão</summary>
-    <div class="cfg">
+    <form class="cfg" id="cfgTrava" autocomplete="off">
+      <label for="cfgSenha" class="lbl">Área restrita: digite a senha para alterar a configuração</label>
+      <div class="row">
+        <input type="password" id="cfgSenha" autocomplete="current-password" style="flex:1 1 200px">
+        <button type="submit">Entrar</button>
+      </div>
+      <span class="note" id="cfgSenhaMsg" role="status"></span>
+    </form>
+    <div class="cfg" id="cfgConteudo" hidden>
       <div class="row">
         <label for="preset">Eleição / arquivo
           <select id="preset">
@@ -1061,6 +1070,22 @@ $("btnCsvUF").addEventListener("click", () => {
     SIGLAS.map(uf => { const r = S.uf[uf], p = S.uf1[uf];
       return [uf.toUpperCase(), UFS[uf], r?.ts, r?.st, votosDe(r, n1), votosDe(r, n2), r && r.esi ? r.a/r.esi : null, p && p.esi ? p.a/p.esi : null, r ? `${r.dt} ${r.ht}` : ""]; }));
 });
+// senha simples da área de configuração: só evita que visitantes mexam por engano.
+// (cada visitante só altera o próprio navegador; a senha fica guardada como hash SHA-256)
+const SENHA_HASH = "ac69d5525ba2e16d3a29e5dbdf5f40534082e2a2b07dc6f3ce4b600f019b884a";
+function liberarCfg(){ $("cfgTrava").hidden = true; $("cfgConteudo").hidden = false; }
+try { if (sessionStorage.getItem("apuracao:cfgOk") === "1") liberarCfg(); } catch {}
+$("cfgTrava").addEventListener("submit", async e => {
+  e.preventDefault();
+  let ok = false;
+  try {
+    const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode($("cfgSenha").value));
+    ok = [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join("") === SENHA_HASH;
+  } catch { ok = false; }
+  if (ok) { try { sessionStorage.setItem("apuracao:cfgOk", "1"); } catch {} $("cfgSenha").value = ""; liberarCfg(); }
+  else { $("cfgSenhaMsg").textContent = "Senha incorreta."; $("cfgSenha").select(); }
+});
+$("cfgBox").addEventListener("toggle", () => { if ($("cfgBox").open && !$("cfgTrava").hidden) $("cfgSenha").focus(); });
 reiniciar();
 </script>
 </body>
