@@ -10,7 +10,7 @@
 /* Layout: status no topo, placar dos dois candidatos, checagem nacional × estados, gráficos, tabelas por estado, configuração no rodapé */
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --fg:#14201b; --muted:#5b6b64; --line:#d5ddd9; --soft:#e8eeeb;
-  --c1:#c4122f; --c2:#1450a0; --ok:#1d7a46; --warn:#b06a00; --bad:#b3261e; --up:#c26a00; --down:#1d7a46;
+  --c1:#c4122f; --c2:#1450a0; --outros:#c9d3dc; --on-c:#ffffff; --ok:#1d7a46; --warn:#b06a00; --bad:#b3261e; --up:#c26a00; --down:#1d7a46;
   --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
   --f-mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
@@ -18,7 +18,7 @@
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1513; --surface:#18211d; --fg:#e8efeb; --muted:#93a39c; --line:#2b3732; --soft:#202a26;
-  --c1:#ff5a6e; --c2:#5b9cff; --ok:#4cc27e; --warn:#f0a43a; --bad:#ff6b5e; --up:#f0a43a; --down:#4cc27e; color-scheme:dark}}
+  --c1:#ff5a6e; --c2:#5b9cff; --outros:#46525c; --on-c:#0f1513; --ok:#4cc27e; --warn:#f0a43a; --bad:#ff6b5e; --up:#f0a43a; --down:#4cc27e; color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 var(--f-body)}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
@@ -122,6 +122,20 @@ tr.sel td{background:var(--soft)}
 #chAbst{display:block;min-width:720px;width:100%;height:auto}
 #chAbst .barra{cursor:pointer}
 #chAbst .barra:hover rect{opacity:.8}
+.turnos{display:grid}
+.tg{display:grid;grid-template-columns:minmax(6.5rem,8rem) minmax(0,1fr) 5.2rem;gap:3px 10px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--soft);cursor:pointer}
+.tg:hover,.tg.sel{background:var(--soft)}
+.tg .tl{font-size:.85rem;white-space:nowrap}
+.tg .tl b{font-family:var(--f-display);font-size:.95rem;margin-right:6px}
+.tg .tr{font:400 .75rem var(--f-mono);color:var(--muted);text-align:right;white-space:nowrap}
+.tb{display:flex;height:22px;border-radius:3px;overflow:hidden;background:var(--soft);min-width:0}
+.tb i{display:flex;align-items:center;font:600 .78rem var(--f-mono);font-style:normal;color:var(--on-c);overflow:hidden;white-space:nowrap;transition:width .6s}
+.tb i.l{background:var(--c1);padding-left:6px}
+.tb i.o{background:var(--outros);color:var(--fg);justify-content:center}
+.tb i.f{background:var(--c2);justify-content:flex-end;padding-right:6px;margin-left:auto}
+.tb.vazio{justify-content:center;align-items:center;font-size:.75rem;color:var(--muted)}
+.tg.br{border-bottom:2px solid var(--line)}
+@media (max-width:520px){.tg{grid-template-columns:5.6rem minmax(0,1fr)}.tg .tr{display:none}}
 @media (max-width:760px){.mapa-grid{grid-template-columns:1fr}}
 @media (max-width:640px){.duel{grid-template-columns:1fr}}
 </style>
@@ -239,6 +253,15 @@ tr.sel td{background:var(--soft)}
         <tbody id="tbUF"><tr><td colspan="7" class="muted">Aguardando dados dos estados</td></tr></tbody>
       </table>
     </div>
+  </section>
+
+  <section class="panel" aria-label="1º e 2º turno por estado">
+    <div class="panel-head">
+      <h2>Como cada estado votou: 1º turno × 2º turno</h2>
+      <div class="leg"><span><i style="background:var(--c1)"></i><span id="tLeg1">Lula</span></span><span><i style="background:var(--outros)"></i>Outros</span><span><i style="background:var(--c2)"></i><span id="tLeg2">F. Bolsonaro</span></span></div>
+    </div>
+    <p class="note">Percentual dos votos válidos, do estado com mais eleitores para o com menos. No 1º turno, "Outros" soma os demais candidatos; no 2º turno, a barra mostra a apuração até agora e, à direita, quanto o estado já apurou. Clique num estado para vê-lo no mapa.</p>
+    <div class="turnos" id="turnos"></div>
   </section>
 
   <section class="panel" aria-label="Abstenção por estado">
@@ -617,6 +640,7 @@ function renderTudo(){
   renderMapa();
   renderDetalhe();
   graficoAbstencao();
+  renderTurnos();
 }
 
 function registrarHistorico(d, p1, sh1, pst){
@@ -870,9 +894,39 @@ function selecionar(uf){
   S.sel = S.sel === uf ? "br" : uf; // clicar de novo no mesmo estado volta para o Brasil
   store.set("apuracao:sel", S.sel);
   renderMapa(); renderDetalhe();
-  for (const tr of document.querySelectorAll("tr[data-uf]")) tr.classList.toggle("sel", tr.dataset.uf === S.sel);
+  for (const tr of document.querySelectorAll("tr[data-uf], .tg[data-uf]")) tr.classList.toggle("sel", tr.dataset.uf === S.sel);
   for (const g of document.querySelectorAll("#chAbst .barra")) g.style.opacity = S.sel === "br" || g.dataset.uf === S.sel ? 1 : .45;
 }
+
+/* ---------- 1º × 2º turno por estado (barras empilhadas) ---------- */
+function barraTurno(v1, v2, vv, rotuloVazio){
+  if (!(v1 + v2)) return `<div class="tb vazio">${rotuloVazio}</div>`;
+  const tot = Math.max(vv || 0, v1 + v2);
+  const p1 = v1/tot, p2 = v2/tot, po = Math.max(0, 1 - p1 - p2);
+  const rot = (p, txt) => p >= 0.07 ? txt : "";
+  return `<div class="tb"><i class="l" style="width:${p1*100}%">${rot(p1, Math.round(p1*100))}</i>` +
+    (po >= 0.001 ? `<i class="o" style="width:${po*100}%">${rot(po, Math.round(po*100))}</i>` : "") +
+    `<i class="f" style="width:${p2*100}%">${rot(p2, Math.round(p2*100))}</i></div>`;
+}
+function renderTurnos(){
+  if (!comEstados()) { $("turnos").innerHTML = `<p class="note">Consulta por estado desligada (Configuração).</p>`; return; }
+  const [n1, n2] = S.nums;
+  setTxt("tLeg1", nomeCurto(n1)); setTxt("tLeg2", nomeCurto(n2) === "Flávio" ? "F. Bolsonaro" : nomeCurto(n2));
+  const soma = fonte => { let a = 0, b = 0, v = 0, ts = 0, st = 0; for (const u of SIGLAS) { const r = fonte[u]; if (!r) continue; a += votosDe(r, n1); b += votosDe(r, n2); v += r.vv || 0; ts += r.ts || 0; st += r.st || 0; } return {a, b, v, ts, st}; };
+  const ordem = SIGLAS.filter(u => u !== "zz").map(u => ({u, te: (S.uf[u] && S.uf[u].te) || (S.uf1[u] && S.uf1[u].te) || 0}))
+    .sort((x, y) => y.te - x.te).map(x => x.u).concat(["zz"]);
+  const bloco = (uf, nome, r1, r2, extra) => {
+    const pst = r2 && r2.ts ? r2.st/r2.ts : 0;
+    return `<div class="tg${extra}${S.sel === uf ? " sel" : ""}" data-uf="${uf}" role="button" tabindex="0" aria-label="${esc(nome)}: 1º e 2º turno">
+      <span class="tl"><b>${esc(nome)}</b>1º turno</span>${barraTurno(r1.a, r1.b, r1.v, "sem dados do 1º turno")}<span class="tr">final</span>
+      <span class="tl"><b>${esc(nome)}</b>2º turno</span>${barraTurno(r2.a, r2.b, r2.a + r2.b, "aguardando apuração")}<span class="tr">${r2.ts ? fmtP(pst, 1).replace(",0%", "%") + " apur." : "–"}</span></div>`;
+  };
+  const um = (r) => r ? {a: votosDe(r, n1), b: votosDe(r, n2), v: r.vv || 0, ts: r.ts || 0, st: r.st || 0} : {a:0, b:0, v:0, ts:0, st:0};
+  let html = bloco("br", "Brasil", soma(S.uf1), soma(S.uf), " br");
+  for (const uf of ordem) html += bloco(uf, uf === "zz" ? "Ext." : uf.toUpperCase(), um(S.uf1[uf]), um(S.uf[uf]), "");
+  $("turnos").innerHTML = html;
+}
+$("turnos").addEventListener("keydown", e => { const g = e.target.closest(".tg"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selecionar(g.dataset.uf); } });
 
 /* ---------- abstenção: uma barra por estado ---------- */
 function graficoAbstencao(){
@@ -908,10 +962,10 @@ function graficoAbstencao(){
   svg.innerHTML = s;
 }
 $("chAbst").addEventListener("click", e => { const g = e.target.closest(".barra"); if (g) selecionar(g.dataset.uf); });
-document.addEventListener("click", e => { const tr = e.target.closest("tr[data-uf]"); if (tr) selecionar(tr.dataset.uf); });
+document.addEventListener("click", e => { const tr = e.target.closest("tr[data-uf], .tg[data-uf]"); if (tr) selecionar(tr.dataset.uf); });
 for (const [id, m] of [["modoLider", "lider"], ["modoAbst", "abst"]])
   $(id).addEventListener("click", () => { modoMapa = m; $("modoLider").setAttribute("aria-pressed", m === "lider"); $("modoAbst").setAttribute("aria-pressed", m === "abst"); renderMapa(); });
-montarMapa(); renderMapa(); renderDetalhe(); graficoAbstencao();
+montarMapa(); renderMapa(); renderDetalhe(); graficoAbstencao(); renderTurnos();
 
 /* ---------- configuração e botões ---------- */
 function salvarCfg(){ store.set("apuracao:cfg", {preset:$("preset").value, url:$("url").value, intervalo:$("intervalo").value, sigma:$("sigma").value, estados:$("estados").value, fonte:$("fonte").value}); }
